@@ -7,8 +7,12 @@
 % t_landmarks: Nx1
 % landmarks: Nx4
 
+% here_map: Nx4
+
+% TODO: Add input data listed above
+
 slam = LocalizerSlam;
-slam.initialize(initialPose)
+slam.initialize();
 
 done = 0;
 t = 0;
@@ -35,14 +39,20 @@ while(!done)
     slam.optimize()
 
     % Get results
-    localMap = slam.getMapEstimate()
+    local_map = slam.getMapEstimate()
+    trajectory = slam.getTrajectoryEstimate()
 
-    % TODO: Add ICP on localMap here
+    % TODO: Perform icp on here_map and local_map to calculate map_transform
+
+    % TODO: Visualize trajectory estimate, local_map and here_map
 
     % Get the next time value
     next_t_odometry = find(t_odometry>t,1)
     next_t_gps = find(t_gps>t,1)
     next_t_landmarks = find(t_landmarks>t,1)
     t = min([next_t_odometry, next_t_gps, next_t_landmarks])
+    if (size(t,1) == 0)
+        done = 1;
+    end
 end
 

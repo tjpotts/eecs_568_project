@@ -1,4 +1,4 @@
-import gtsam.*
+odometry_index gtsam.*
 
 classdef LocalizerSlam
     properties
@@ -6,61 +6,108 @@ classdef LocalizerSlam
     methods
         % Initialize the SLAM algorithm
         % initialPose: SE2 pose
-        function initialize(obj, initialPose)
+        function initialize(obj)
             % ISAM2 optimizer
             obj.isam = ISAM2;
 
             % Objects to hold new factors and initial estimates added to the factor graph
-            obj.newFactors = NonlinearFactorGraph;
-            obj.initialEstimates = Values;
+            obj.new_factors = NonlinearFactorGraph;
+            obj.initial_estimates = Values;
 
-            % Index number to use for next odometry measurement
-            obj.odometryIndex = 0;
+            % Index and timestamp of the last pose added to the factor graph
+            obj.pose_index = 0;
+            obj.pose_t = 0;
+
+            % Matrix of already observered landmarks and their semantic types
+            % landmarks(n,:) = [landmark_id, landmark_type]
+            obj.landmarks = [];
+
+            % Set noise parameters
+            % TODO: Create noise models
+            obj.odometry_noise = [];
+            obj.gps_noise = [];
+            obj.landmark_noise = [];
+
+            % Create a prior on the origin
+            obj.new_factors.add(PriorFactorPose2("O",Pose2(0,0,0),noiseModel.Diagonal.Sigmas([1e-5 1e-5 1e-5])));
         end
 
-        % Adds a new odometry measurement to the pose graph
+        % Adds a new odometry measurement to the factor graph
         % t: timestamp of measurement
         % meas: [3x3] SE2 transformation
         function addOdometry(obj, t, meas)
-            % TODO: Create odometry factor
-            % TODO: Calculate initial estimate based on previous estimate
-            % TODO: Add to newFactors/initialEstimates objects
+            dt = t - obj.pose_t;
+
+            % Add odometry factor the the factor graph
+            i = obj.pose_index + 1; % Index for new pose
+            odometry_pose = Pose2(meas(1)*dt, meas(2)*dt, meas(3)*dt);
+            odometry_factor = BetweenFactorPose(i-1, i, odometry_pose, obj.odometry_noise);
+            obj.new_factors.add(odometry_factor);
+
+            % Calculate initial estimate of new pose based on previous estimate and odometry
+            current_pose = obj.result.getPose2At(i-1);
+            new_pose_initial = current_pose.compose(odometry_pose);
+            obj.initial_estimates.insert(i,new_pose_initial);
+
+            % Store the index and timestamp of the pose added
+            obj.pose_index = i;
+            obj.pose_t = t;
         end
 
-        % Adds a new GPS measurement to the pose graph
+        % Adds a new GPS measurement to the factor graph
         % t: timestamp of measurement
         % meas: [X,Y] coordinates of GPS measurement
         function addGps(obj, t, meas)
-            % TODO: Create gps factor
-            % TODO: Add to newFactors object
+            % TODO: Incorporate t and last odometry measurement into factor to account for distance travelled
+            %       since corresponding pose was added?
+            % Create the GPS factor and add it to the factor graph
+            gps_point = Point2(meas(1),meas(2));
+            gps_factor = DeltaFactor("O", obj.pose_index, gps_point, gps_noise);
+            obj.new_factors.add(gps_factor);
         end
 
-        % Adds a new landmark observation to the pose graph
+        % Adds a new landmark observation to the factor graph
         % t: timestamp of measurement
         % meas: [Nx4] data of landmark observations at current timestep
         % meas(n,:) [ID,X,Y,Type] data for landmark observation n
         function addLandmarks(obj, t, meas)
-            % TODO: Add landmark factors
-            % TODO: Calculate the initial estimate based on previous estimate if exists, otherwised based on prevous pose
-            % TODO: Add to newFactors/initialEstimates objects
+            % TODO: Incorporate t and alst odometry measurement into factor to account for distance travelled
+            %       since corresponding pose was added?
+            % Add the landmark observation factor to the pose graph
+            landmark_id = "L"+meas(1);
+            landmark_point = Point2(meas(2),meas(3));
+            landmark_factor = DeltaFactor(obj.pose_index, landmark_id, landmark_point, obj.landmark_noise);
+
+            % Check if this the first time seeing this landmark
+            if (~any(obj.landmarks(:,1) == meas(1)))
+                % Add the landmark to the list of observerd landmarks
+                obj.landmarks = [obj.landmarks; meas(1) meas(4)];
+                % Calculate the initial estimate based on the current pose estimate
+                current_pose = obj.result.getpose2At(i);
+                landmark_initial = current_pose.transformFrom(landmark_point);
+                obj.initial_estimates.insert(landmark_id, landmark_initial);
+            end
         end
 
         % Run the optimizer
         function optimize(obj)
+            % TODO: Will probably need to avoid running until we have enough information to 
+            %       have a well-defined linear system
             % Run ISAM2
-            isam.update(obj.newFactors,obj.initialEstimates)
+            isam.update(obj.new_factors,obj.initial_estimates)
+            obj.result = obj.isam.calculateEstimate()
 
-            % Reset the newFactors and initialEstimates objects
-            obj.newFactors = NonlinearFactorGraph
-            obj.initialEstimates = Values;
+            % Reset the new_factors and initial_estimates objects
+            obj.new_factors = NonlinearFactorGraph
+            obj.initial_estimates = Values;
         end
 
         % Get the current pose estimate of the vehicle
         % returns: SE2 pose
         function pose = getPoseEstimate(obj)
-            result = isam.calculateEstimate()
-            gtPose = result.getPose2At(obj.odometryIndex)
+            gtPose = obj.result.getPose2At(obj.odometryIndex)
             % TODO: Convert from gtsam type to 3x3 matrix
+            gtpose = zeros(3,3); % Temporary
         end
 
         % Get the current estimated trajectory of the vehicle
@@ -73,7 +120,14 @@ classdef LocalizerSlam
         % returns: Nx3 matrix of landmark estimates
         % map(n,:) = [X,Y,Type] for landmark n
         function map = getMapEstimate(obj)
-            % TODO: Implemeent
+            % Generate the landmark map
+            landmark_count = size(obj.landmarks,1);
+            map = zeros(landmark_count,4);
+            for i = 1:landmark_count
+                [landmark_id, landmark_type] = obj.landmarks(i,:);
+                landmark_point = obj.results.getPoint2At("L"+landmark_id);
+                map(i,:) = [landmark_id, landmark_point.x, landmark_point.y, landmark_type];
+            end
         end
     end
 end
