@@ -124,11 +124,13 @@ slam.initialize();
 
 done = 0;
 t = START_TIME;
+t_last_optimization = t;
 figure(1);
 axis equal;
 hold on;
 trajectory_line = animatedline('Color','b');
 gps_line = animatedline('Color','r');
+trajectory_plot = plot([0],[0]);
 local_map_scatter = scatter([],[]);
 
 i_odometry = find(t_odometry > START_TIME, 1);
@@ -140,27 +142,30 @@ t_plot_update = toc;
 while(~done)
     display(t);
 
-    % Add odometry measurements at the current time
-    if (t >= t_odometry(i_odometry))
+    % Add new odometry measurements at the current time
+    while (t >= t_odometry(i_odometry))
         slam.addOdometry(t_odometry(i_odometry), odometry(i_odometry,:));
         i_odometry = i_odometry + 1;
     end
 
-    % Add GPS measurements at the current time
-    if (t >= t_gps(i_gps))
-        %slam.addGps(t_gps(i_gps), gps(i_gps,:));
+    % Add new GPS measurements at the current time
+    while (t >= t_gps(i_gps))
+        slam.addGps(t_gps(i_gps), gps(i_gps,:));
         addpoints(gps_line, gps(i_gps,1), gps(i_gps,2));
         i_gps = i_gps + 1;
     end
 
-    % Add landmark observations at the current time
-    if (t >= t_landmarks(i_landmarks))
+    % Add new landmark observations at the current time
+    while (t >= t_landmarks(i_landmarks))
         slam.addLandmark(t_landmarks(i_landmarks), landmarks(i_landmarks,:));
         i_landmarks = i_landmarks + 1;
     end
 
-    % Run optimization
-    slam.optimize();
+    % Run optimization every 100ms simulated time
+    if (t - t_last_optimization > 0.1)
+        slam.optimize();
+        t_last_optimization = t;
+    end
 
     t_real = toc;
     if (t_real - t_plot_update > 1)
@@ -170,6 +175,8 @@ while(~done)
         local_map_scatter.XData = local_map(:,2);
         local_map_scatter.YData = local_map(:,3);
         trajectory = slam.getTrajectoryEstimate();
+        trajectory_plot.XData = trajectory(:,1);
+        trajectory_plot.YData = trajectory(:,2);
         t_plot_update = toc;
     end
 
