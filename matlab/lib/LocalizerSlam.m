@@ -10,18 +10,19 @@ classdef LocalizerSlam < handle
 
         % Index and timestamp of the last pose added to the factor graph
         pose_index = 0
+        pose_marginalized = 0
         pose_t = 0
+        pose_times = []
 
         % Current pose, trajectory and map estimate
         current_pose
         trajectory
-        local_map
 
         % Holds a list of already observed landmarks and their semantic types
         % landmarks(n,:) = [landmark_id, landmark_type]
         landmarks = zeros(0,2);
 
-        % TODO: Create noise models
+        % Noise models
         odometry_noise
         gps_noise
         landmark_noise
@@ -42,15 +43,15 @@ classdef LocalizerSlam < handle
 
             % Set the initial pose estimate at the origin and create a prior factor
             %obj.current_pose = Pose2(0,0,pi);
-            obj.current_pose = Pose2(0,0,0);
-            obj.pose_index = 0;
+            obj.current_pose = Pose2(0,0,-pi);
+            obj.pose_index = 1;
             obj.pose_t = 0;
-            obj.new_factors.add(PriorFactorPose2(0, obj.current_pose, noiseModel.Diagonal.Sigmas([1e-5; 1e-5; 0.01])));
-            obj.initial_estimates.insert(0, Pose2(0,0,0));
+            obj.new_factors.add(PriorFactorPose2(obj.pose_index, obj.current_pose, noiseModel.Diagonal.Sigmas([1e-5; 1e-5; 0.01])));
+            obj.initial_estimates.insert(obj.pose_index, obj.current_pose);
 
             % Create noise models
-            obj.odometry_noise = noiseModel.Diagonal.Sigmas([1; 1; 0.1]);
-            obj.gps_noise = noiseModel.Diagonal.Sigmas([1e4; 1e4]);
+            obj.odometry_noise = noiseModel.Diagonal.Sigmas([1; 1; 0.3]);
+            obj.gps_noise = noiseModel.Diagonal.Sigmas([1e2; 1e2]);
             obj.landmark_noise = noiseModel.Diagonal.Sigmas([100; 100]);
         end
 
@@ -75,14 +76,13 @@ classdef LocalizerSlam < handle
             % Store the index and timestamp of the pose added
             obj.pose_index = i;
             obj.pose_t = t;
+            obj.pose_times = [obj.pose_times; t];
         end
 
         % Adds a new GPS measurement to the factor graph
         % t: timestamp of measurement
         % meas: [X,Y] coordinates of GPS measurement
         function addGps(obj, t, meas)
-            % TODO: Incorporate t and last odometry measurement into factor to account for distance travelled
-            %       since corresponding pose was added?
             % Create the GPS factor and add it to the factor graph
             gps_pose = gtsam.Pose2(meas(1),meas(2),0);
             gps_factor = gtsam.PoseTranslationPrior2D(obj.pose_index, gps_pose, obj.gps_noise);
@@ -96,8 +96,6 @@ classdef LocalizerSlam < handle
         function addLandmark(obj, t, meas)
             import gtsam.*
 
-            % TODO: Incorporate t and alst odometry measurement into factor to account for distance travelled
-            %       since corresponding pose was added?
             % Add the landmark observation factor to the pose graph
             landmark_id = symbol('L',meas(1));
             landmark_point = Point2(meas(2),meas(3));
@@ -112,7 +110,10 @@ classdef LocalizerSlam < handle
                 % Calculate the initial estimate based on the current pose estimate
                 landmark_initial = obj.current_pose.transformFrom(landmark_point);
                 obj.initial_estimates.insert(landmark_id, landmark_initial);
-                obj.local_map = [obj.local_map; meas(1) landmark_initial.x landmark_initial.y meas(4)];
+            elseif (meas(4) ~= 0)
+                % Update the landmark type
+                landmark_idx = find(obj.landmarks(:,1) == meas(1));
+                obj.landmarks(landmark_idx,2) = meas(4);
             end
         end
 
@@ -120,23 +121,45 @@ classdef LocalizerSlam < handle
         function optimize(obj)
             import gtsam.*
 
-            % TODO: Will probably need to avoid running until we have enough information to
-            %       have a well-defined linear system
+            %{
+            % Generate a list of pose indexes we want to marginalize out
+            marginalize_pose_first = obj.pose_marginalized+1;
+            marginalize_pose_last = max([obj.pose_marginalized obj.pose_index-100]);
+            marginalize_list = marginalize_pose_first:marginalize_pose_last;
+            marginalize_keylist = gtsam.utilities.createKeyList(marginalize_list');
+
+            % Create a keygroupmap to group all of the symbols we want to marginalize separately from those we do not
+            % in the bayes tree
+            % Group 0 = marginalize group
+            % Group 1 = others
+            marginalize_keygroupmap = gtsam.KeyGroupMap();
+            reelim_keylist = gtsam.KeyList();
+            for i = marginalize_pose_first:obj.pose_index
+                if (i <= marginalize_pose_last)
+                    marginalize_keygroupmap.insert2(i,0);
+                else
+                    marginalize_keygroupmap.insert2(i,1);
+                end
+                %reelim_keylist.push_back(i);
+            end
+            for i = 1:size(obj.landmarks,1)
+                % Landmarks are never marginalized
+                landmark_symbol = gtsam.symbol('L', obj.landmarks(i,1));
+                marginalize_keygroupmap.insert2(landmark_symbol, 1);
+                %reelim_keylist.push_back(landmark_symbol);
+            end
+
+            % Create a list of all other keys that need to be reeliminated in the Bayes tree
+
+            %}
+
             % Run ISAM2 and get our new estimate of our current pose and map
-            obj.isam.update(obj.new_factors,obj.initial_estimates);
-            results = obj.isam.calculateEstimate();
-            obj.current_pose = results.atPose2(obj.pose_index);
-            for i = 1:obj.pose_index
-                trajectory_pose = results.atPose2(i);
-                obj.trajectory(i,1) = trajectory_pose.x;
-                obj.trajectory(i,2) = trajectory_pose.y;
-            end
-            for i = 1:size(obj.local_map,1)
-                landmark_id = obj.local_map(i,1);
-                landmark_point = results.atPoint2(symbol('L',landmark_id));
-                obj.local_map(i,2) = landmark_point.x;
-                obj.local_map(i,3) = landmark_point.y;
-            end
+            obj.isam.update(obj.new_factors, obj.initial_estimates);
+            %obj.isam.update(obj.new_factors, obj.initial_estimates, gtsam.FactorIndices(), marginalize_keygroupmap, gtsam.KeyList(), reelim_keylist, false);
+            %obj.isam.marginalizeLeaves(marginalize_keylist);
+            %obj.pose_marginalized = marginalize_pose_last;
+
+            obj.current_pose = obj.isam.calculateEstimatePose2(obj.pose_index);
 
             % Reset the new_factors and initial_estimates objects
             obj.new_factors.resize(0);
@@ -153,14 +176,36 @@ classdef LocalizerSlam < handle
         % Get the current estimated trajectory of the vehicle
         % returns: [Nx3x3] matrics of stacked SE2 poses
         function traj = getTrajectoryEstimate(obj)
-            traj = obj.trajectory;
+            % TODO: Fix so that this can be called in between adding new odometry measurements and calling optimize()
+            %       Right now, it will cause an issue because the new poses will not have been added to the ISAM pose graph yet
+            results = obj.isam.calculateEstimate();
+            traj = zeros(obj.pose_index,2);
+            for i = 1:obj.pose_index
+                try
+                    trajectory_pose = results.atPose2(i);
+                    traj(i,1) = trajectory_pose.x;
+                    traj(i,2) = trajectory_pose.y;
+                catch e
+                    traj = traj(1:i-1,:);
+                    break;
+                end
+            end
         end
 
         % Get the current estimate of the landmark map
         % returns: Nx3 matrix of landmark estimates
         % map(n,:) = [X,Y,Type] for landmark n
         function map = getMapEstimate(obj)
-            map = obj.local_map;
+            map = zeros(size(obj.landmarks,1),4);
+            map(:,1) = obj.landmarks(:,1);
+            map(:,4) = obj.landmarks(:,2);
+            results = obj.isam.calculateEstimate();
+            for i = 1:size(obj.landmarks,1)
+                landmark_id = obj.landmarks(i,1);
+                landmark_point = results.atPoint2(gtsam.symbol('L',landmark_id));
+                map(i,2) = landmark_point.x;
+                map(i,3) = landmark_point.y;
+            end
         end
     end
 end
