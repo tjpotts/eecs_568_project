@@ -28,7 +28,7 @@ classdef sicp < handle
             obj.err = zeros(size(targetCloud.Location,1));
         end
         
-        function getCorrectedPose(obj)
+        function correlation = getCorrectedPose(obj)
             %TODO: look into how to get a better initial guess
             %Idea: Compute the beginning error after some amount of steps,
             %and trim based on that
@@ -40,11 +40,17 @@ classdef sicp < handle
             obj.newLocation(:,2) = obj.newLocation(:,2) + obj.T(2,4);
             obj.newLocation(:,3) = obj.newLocation(:,3) + obj.T(3,4);
             obj.err = zeros(size(idx,1),3)-1;
+
+            correlation = [];
             for i = 1:size(idx,1)
                 if idx(i) ~= 0
                     obj.err(i,:) = obj.newLocation(i,:) - obj.target.Location(idx(i),1:3);
+                    %correlation from source landmark index to target
+                    %landmark index
+                    correlation = [correlation; i idx(i)];
                 end
             end
+            
         end  
         
         %update source cloud
