@@ -1,5 +1,5 @@
 
-classdef LocalizerSlam < handle
+classdef FactorGraphSlam < handle
     properties
         % ISAM2 optimizer
         isam
@@ -34,7 +34,7 @@ classdef LocalizerSlam < handle
     methods
         % Initialize the SLAM algorithm
         % initialPose: SE2 pose
-        function initialize(obj)
+        function initialize(obj, initial_pose)
             import gtsam.*
 
             obj.isam = ISAM2();
@@ -43,7 +43,7 @@ classdef LocalizerSlam < handle
 
             % Set the initial pose estimate at the origin and create a prior factor
             %obj.current_pose = Pose2(0,0,pi);
-            obj.current_pose = Pose2(0,0,-pi);
+            obj.current_pose = Pose2(initial_pose(1), initial_pose(2), -pi);
             obj.pose_index = 1;
             obj.pose_t = 0;
             obj.new_factors.add(PriorFactorPose2(obj.pose_index, obj.current_pose, noiseModel.Diagonal.Sigmas([1e-5; 1e-5; 0.01])));
