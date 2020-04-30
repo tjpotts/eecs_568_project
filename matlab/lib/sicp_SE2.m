@@ -1,4 +1,4 @@
-function [T, idx] = sicp_SE2(target, source, initialT)
+function [T, idx, converged] = sicp_SE2(target, source, initialT)
     % Generalized ICP over SE(3)
     %
     %   Author: Maani Ghaffari Jadidi
@@ -29,7 +29,7 @@ function [T, idx] = sicp_SE2(target, source, initialT)
     % ICP loop: find correspondences and optimize
     d_threshold = 10000;
     converged = false;
-    tf_epsilon = 1e-10;
+    tf_epsilon = 1e-15;
     iter = 0;
     max_iter = 100;
     inner_max_iter = 100;
