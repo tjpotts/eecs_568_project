@@ -80,13 +80,13 @@ function [T, idx, converged] = sicp_SE2(target, source, initialT)
             T1 = expm( hat(dx) ) * T1;
 
             if ~mod(inner_iter,5)
-                disp(['GN Iter: '     num2str(inner_iter)])      
+                %disp(['GN Iter: '     num2str(inner_iter)])      
             end   
 
             % check if converged
             if norm(b) < eps_Jr
                 if mod(inner_iter,5)
-                disp(['GN Iter: '     num2str(inner_iter)])      
+                %disp(['GN Iter: '     num2str(inner_iter)])      
                 end
                 break;
             end
@@ -94,14 +94,14 @@ function [T, idx, converged] = sicp_SE2(target, source, initialT)
 
         % check if converged
         if norm(logm(T0 \ T1)) < tf_epsilon
-            disp('Converged')
+            %disp('Converged')
             converged = true;
         else
             T0 = T1;
             iter = iter + 1;
-            disp(['Iter: '     num2str(iter)])
+            %disp(['Iter: '     num2str(iter)])
             if ~(iter < max_iter)
-                disp(['Not converged. Maximum iteration of ', num2str(max_iter), ' is reached'])
+                %disp(['Not converged. Maximum iteration of ', num2str(max_iter), ' is reached'])
             end
         end
     end

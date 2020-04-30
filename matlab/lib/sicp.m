@@ -53,6 +53,10 @@ classdef sicp < handle
                 end
             end
             
+            if size(correlation,1) < 6
+               converged = false; 
+            end
+            
         end  
         
         %update source cloud
