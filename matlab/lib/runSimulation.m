@@ -18,10 +18,18 @@ function [output] = runSimulation(vehicle_input, global_map, ground_truth, optio
     local_map_matched_scatter = scatter([],[],20,[0 0.5 0], 'DisplayName','Matched Landmarks');
     legend();
 
+    % Setup video writer
+    v = [];
+    if (options.video_period > 0)
+        video_writer = VideoWriter('test.avi');
+        open(video_writer);
+    end
+
     % Main loop
     t = options.t_start;
     t_last_optimization = t;
     t_last_icp = t;
+    t_last_video_frame = t;
     i_odometry = find(vehicle_input.t_odometry > options.t_start, 1);
     i_gps = find(vehicle_input.t_gps > options.t_start, 1);
     i_landmarks = find(vehicle_input.t_landmarks > options.t_start, 1);;
@@ -112,6 +120,12 @@ function [output] = runSimulation(vehicle_input, global_map, ground_truth, optio
         addpoints(trajectory_line, pose.x, pose.y);
         drawnow limitrate;
         % TODO: Visualize local_map and here_map
+
+        % Write video frame
+        if (options.video_period > 0 && (t - t_last_video_frame) > options.video_period)
+            writeVideo(video_writer, getframe(1));
+            t_last_video_frame = t;
+        end
 
         % Get the next time value
         next_t_odometry = vehicle_input.t_odometry(i_odometry);
