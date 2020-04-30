@@ -54,7 +54,7 @@ classdef sicp < handle
             end
             
             if size(correlation,1) < 6
-               converged = false; 
+               obj.converged = false; 
             end
             
         end  
