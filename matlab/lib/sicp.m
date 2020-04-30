@@ -11,11 +11,16 @@ classdef sicp < handle
         T
         transformedSource
         
-        %points with no matching semantic class are sent to -1
-        err
-        
         %true if converge, flase if not converged
         converged
+        
+        %correlation matrix between transformed source cloud and target
+        %cloud
+        correlation
+        
+        %error
+        errorLocation
+        avgError
        
     end
     
@@ -27,10 +32,10 @@ classdef sicp < handle
             obj.initialT = initialTransform;
             obj.target = targetCloud;
             obj.source = sourceCloud;
-            obj.err = zeros(size(targetCloud.Location,1));
+%             obj.err = zeros(size(targetCloud.Location,1));
         end
         
-        function correlation = getCorrectedPose(obj)
+        function getCorrectedPose(obj)
             %TODO: look into how to get a better initial guess
             %Idea: Compute the beginning error after some amount of steps,
             %and trim based on that
@@ -41,19 +46,18 @@ classdef sicp < handle
             obj.transformedSource(:,1) = obj.transformedSource(:,1) + obj.T(1,4);
             obj.transformedSource(:,2) = obj.transformedSource(:,2) + obj.T(2,4);
             obj.transformedSource(:,3) = obj.transformedSource(:,3) + obj.T(3,4);
-            obj.err = zeros(size(idx,1),3)-1;
 
-            correlation = [];
+            obj.correlation = [];
             for i = 1:size(idx,1)
                 if idx(i) ~= 0
-                    obj.err(i,:) = obj.transformedSource(i,:) - obj.target.Location(idx(i),1:3);
+%                     obj.err(i,:) = obj.transformedSource(i,:) - obj.target.Location(idx(i),1:3);
                     %correlation from source landmark index to target
                     %landmark index
-                    correlation = [correlation; i idx(i)];
+                    obj.correlation = [obj.correlation; i idx(i)];
                 end
             end
             
-            if size(correlation,1) < 6
+            if size(obj.correlation,1) < 6
                obj.converged = false; 
             end
             
@@ -77,6 +81,21 @@ classdef sicp < handle
                 error('initial transfrom must be 4x4');
             end
             obj.initialT = T;
-        end      
+        end
+        
+        %calculate error between correlated classes
+        function calculateError(obj)
+            obj.errorLocation=[];
+            error=[];
+            if ~isempty(obj.correlation)
+                for i = 1:size(obj.correlation,1)
+                    obj.errorLocation = [obj.errorLocation; obj.transformedSource(obj.correlation(i,1),1:2) obj.target.Location(obj.correlation(i,2),1:2)];
+                    error = [error; norm(obj.errorLocation(i,1:2) - obj.errorLocation(i,3:4))];
+                end
+                obj.avgError = mean(error);
+            else
+                obj.avgError = 10000;
+            end  
+         end
     end
 end
