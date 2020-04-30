@@ -19,8 +19,8 @@ classdef LocalizerSlam < handle
         trajectory
 
         % Holds a list of already observed landmarks and their semantic types
-        % landmarks(n,:) = [landmark_id, landmark_type]
-        landmarks = zeros(0,2);
+        % landmarks(n,:) = [landmark_id, landmark_type, landmark_added]
+        landmarks = zeros(0,3);
 
         % Noise models
         odometry_noise
@@ -105,7 +105,7 @@ classdef LocalizerSlam < handle
             % Check if this the first time seeing this landmark
             if (~any(obj.landmarks(:,1) == meas(1)))
                 % Add the landmark to the list of observerd landmarks
-                obj.landmarks = [obj.landmarks; meas(1) meas(4)];
+                obj.landmarks = [obj.landmarks; meas(1) meas(4) 0];
 
                 % Calculate the initial estimate based on the current pose estimate
                 landmark_initial = obj.current_pose.transformFrom(landmark_point);
@@ -161,6 +161,9 @@ classdef LocalizerSlam < handle
 
             obj.current_pose = obj.isam.calculateEstimatePose2(obj.pose_index);
 
+            % Mark all landmarks as added
+            obj.landmarks(:,3) = 1;
+
             % Reset the new_factors and initial_estimates objects
             obj.new_factors.resize(0);
             obj.initial_estimates.clear();
@@ -201,10 +204,12 @@ classdef LocalizerSlam < handle
             map(:,4) = obj.landmarks(:,2);
             results = obj.isam.calculateEstimate();
             for i = 1:size(obj.landmarks,1)
-                landmark_id = obj.landmarks(i,1);
-                landmark_point = results.atPoint2(gtsam.symbol('L',landmark_id));
-                map(i,2) = landmark_point.x;
-                map(i,3) = landmark_point.y;
+                if (obj.landmarks(i,3))
+                    landmark_id = obj.landmarks(i,1);
+                    landmark_point = results.atPoint2(gtsam.symbol('L',landmark_id));
+                    map(i,2) = landmark_point.x;
+                    map(i,3) = landmark_point.y;
+                end
             end
         end
     end

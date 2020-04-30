@@ -20,13 +20,13 @@ function [output] = runSimulation(vehicle_input, global_map, options)
     tic;
     t = options.t_start;
     t_last_optimization = t;
+    t_last_icp = t;
     t_plot_update = toc;
     i_odometry = find(vehicle_input.t_odometry > options.t_start, 1);
     i_gps = find(vehicle_input.t_gps > options.t_start, 1);
     i_landmarks = find(vehicle_input.t_landmarks > options.t_start, 1);;
     done = 0;
     while(~done)
-        display(t);
 
         % Add new odometry measurements at the current time
         while (t >= vehicle_input.t_odometry(i_odometry))
@@ -59,7 +59,6 @@ function [output] = runSimulation(vehicle_input, global_map, options)
             if (t_real - t_plot_update > options.plot_period)
                 % Get results
                 local_map = slam.getMapEstimate();
-                %scatter(local_map(:,2),local_map(:,3));
                 local_map_scatter.XData = local_map(:,2);
                 local_map_scatter.YData = local_map(:,3);
                 trajectory = slam.getTrajectoryEstimate();
@@ -70,7 +69,28 @@ function [output] = runSimulation(vehicle_input, global_map, options)
         end
 
 
-        % TODO: Perform icp on here_map and local_map to calculate map_transform
+        % Perform ICP on local_map and global_map
+        if (t - t_last_icp > options.icp_period)
+            local_map = slam.getMapEstimate();
+
+            initial_transform = [1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1];
+            target = {};
+            target.Location = zeros(size(global_map,1),3);
+            target.Location(:,1:2) = global_map(:,1:2);
+            target.Label = global_map(:,3);
+            source = {};
+            source.Location = zeros(size(local_map,1),3);
+            source.Location(:,1:2) = local_map(:,2:3);
+            source.Label = local_map(:,4);
+
+            sicp_obj = sicp(target, source, initial_transform);
+            correlation = sicp_obj.getCorrectedPose();
+            display(size(correlation,1));
+            display(sicp_obj.converged);
+            display(sicp_obj.T);
+
+            t_last_icp = t;
+        end
 
         % Visualize trajectory
         pose = slam.getPoseEstimate();
