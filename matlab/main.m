@@ -18,8 +18,16 @@ sim_options.plot_period = 15; % Amount of real time in seconds to wait between e
 load('VehicleData3.mat');
 vehicle_input = processVehicleInput(testListArray, sim_options.t_start, sim_options.t_end);
 
+% Use original gps data as "ground truth"
+ground_truth = {};
+ground_truth.t_pos = vehicle_input.t_gps;
+ground_truth.pos = vehicle_input.gps;
+
+% Corrupt GPS data
+vehicle_input.gps = vehicle_input.gps + [100 50];
+
 % Load global map data
-load('SignMap_4.mat');
+load('SignMap_5.mat');
 global_map = zeros(size(signDataOut_03.latLong,1),3);
 
 global_map(:,3) = signDataOut_03.TypeArray;
@@ -29,7 +37,7 @@ for i = 1:size(signDataOut_03.latLong,1)
 end
 
 % Run simulation
-sim_output = runSimulation(vehicle_input, global_map, sim_options);
+sim_output = runSimulation(vehicle_input, global_map, ground_truth, sim_options);
 
 % Display the final estimated local map
 figure(2);

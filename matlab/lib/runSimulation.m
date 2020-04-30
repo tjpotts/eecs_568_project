@@ -1,9 +1,10 @@
-function [output] = runSimulation(vehicle_input, global_map, options)
+function [output] = runSimulation(vehicle_input, global_map, ground_truth, options)
     local_map = [];
     trajectory = [];
 
     % Initialize slam
     slam = LocalizerSlam();
+    %TODO: Set initial position estimate based on first GPS data
     slam.initialize();
 
     % Setup plots
@@ -12,7 +13,7 @@ function [output] = runSimulation(vehicle_input, global_map, options)
     axis equal;
     hold on;
     trajectory_line = animatedline('Color','b');
-    gps_line = animatedline('Color','r');
+    ground_truth_line = animatedline('Color','r');
     trajectory_plot = plot([0],[0]);
     local_map_scatter = scatter([],[]);
 
@@ -37,7 +38,11 @@ function [output] = runSimulation(vehicle_input, global_map, options)
         % Add new GPS measurements at the current time
         while (t >= vehicle_input.t_gps(i_gps))
             slam.addGps(vehicle_input.t_gps(i_gps), vehicle_input.gps(i_gps,:));
-            addpoints(gps_line, vehicle_input.gps(i_gps,1), vehicle_input.gps(i_gps,2));
+
+            % Plot the "ground truth" vehicle position
+            % TODO: Update so that this does not rely on having the same time points as gps
+            addpoints(ground_truth_line, ground_truth.pos(i_gps,1), ground_truth.pos(i_gps,2));
+
             i_gps = i_gps + 1;
         end
 
@@ -61,9 +66,6 @@ function [output] = runSimulation(vehicle_input, global_map, options)
                 local_map = slam.getMapEstimate();
                 local_map_scatter.XData = local_map(:,2);
                 local_map_scatter.YData = local_map(:,3);
-                trajectory = slam.getTrajectoryEstimate();
-                trajectory_plot.XData = trajectory(:,1);
-                trajectory_plot.YData = trajectory(:,2);
                 t_plot_update = toc;
             end
         end
@@ -84,10 +86,20 @@ function [output] = runSimulation(vehicle_input, global_map, options)
             source.Label = local_map(:,4);
 
             sicp_obj = sicp(target, source, initial_transform);
-            correlation = sicp_obj.getCorrectedPose();
-            display(size(correlation,1));
+            sicp_obj.getCorrectedPose();
+            sicp_obj.calculateError();
+
+            display(size(sicp_obj.correlation,1));
             display(sicp_obj.converged);
+            display(sicp_obj.avgError);
             display(sicp_obj.T);
+
+            x_offset = sicp_obj.T(1,4);
+            y_offset = sicp_obj.T(2,4);
+
+            trajectory = slam.getTrajectoryEstimate();
+            trajectory_plot.XData = trajectory(:,1) + x_offset;
+            trajectory_plot.YData = trajectory(:,2) + y_offset;
 
             t_last_icp = t;
         end
