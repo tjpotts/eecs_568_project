@@ -67,7 +67,20 @@ Our approach is to first use vehicle sensor data, specifically odometry, GPS mea
 
 \subsection{Vehicle Input Data Processing}
 
-Placeholder
+The following vehicle sensor data was collected in a drive through the urban city of Chicago:
+\begin{itemize}
+\item Camera hardware and software system similar to cameras offered in production vehicles today. The camera detection software can detect approximately 400 different types of road-signs and calculate the location of those signs relative to the vehicle. 
+\item Yaw rate sensor to detect changes in vehicle yaw.
+\item Velocity sensor to detect vehicle lateral and longitudinal velocity.
+\item GPS to calculate vehicle latitude and longitude coordinates.
+\end{itemize}
+
+The yaw rate and vehicle speed data were used to calculate 
+
+The vehicle yaw rate and velocity was used to calculate the relative pose odometry between timesteps. The odometry, the landmarks (consisting of the traffic signs), and GPS coordinates were inputs into the SLAM algorithm which outputted a local landmark map. 
+The global landmark map was generated using HERE Maps. HERE is a global map supplier. We used two of their layers: the Advanced Navigation Attributes layer and the Topology-Geometry layer. The Advanced Navigation Attributes contains a listing of all known signs in a given area or tile. Each sign has sign type a corresponding segment Anchor Index which corresponds to a global segment ID and offset index (0-1) along the segment. The segment ID is then matched within the Road Topology and Geometry layer. The Road Topology and Geometry layer contains latitude and longitude points along a road. The offset index can then be used to find the latitude and longitude point of the sign.
+It is important to note that these road segments are piece wise linear and consequently the accuracy in the direction parallel to the road may be high, but the accuracy in the perpendicular direction will be low since we have no information about the sign location relative to the center of the road. Because of this limitation our algorithm at best may be off by half a road width or more. Since our main concern is localizing to the correct road, we believe that this is acceptable. 
+
 
 \subsection{Map Data Processing}
 
@@ -76,7 +89,7 @@ Map Data Processing Placeholder
 \subsection{Simultaneous Localization and Mapping}
 
 In order to generate an initial trajectory estimate and local map of observed landmarks, we utilize a factor graph based SLAM method <REFERENCE>.
-The variables in our factor graph consist of vehicle poses $X_t \in \marthrm{SE}(2)$ and landmark positions $L_n \in \mathbb{R}^2$.
+The variables in our factor graph consist of vehicle poses $X_t \in \mathrm{SE}(2)$ and landmark positions $L_n \in \mathbb{R}^2$.
 Our vehicle data provides longitudinal velocity and yaw rate which can be combined into odometry factors $u_t \in \mathfrak{se}(2)$ between poses $X_t$ and $X_{t+1}$.
 The GPS measurements $z_t \in \mathbb{R}^2$ are used as prior factors on the translational component of the current vehicle pose $X_t$ at the time that the measurement is obtained. Due to the difference in sampling rate of odometry and GPS data, not all poses will have an associated prior factor.
 Each landmark observation consists of a landmark identifier $n$ and a distance to the landmark $v_i \in \mathbb{R}^2$ relative to the vehicle frame which is added as a factor between the pose $X_t$ at the time the measurement is obtained and the landmark location $L_n$.
