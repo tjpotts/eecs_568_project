@@ -52,7 +52,7 @@ Email: ajaeckel@umich.edu, ryajones@umich.edu, tpotts@umich.edu, rbaskara@umich.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-Many of today’s partially autonomous vehicles rely heavily on the ability to localize correctly to a known map.  These systems are not robust enough to work in all areas and so functionality is reduced in areas that present particular challenges or hazards.  Some systems may limit functionality due to noise factors such as low-quality lane line markings, while yet others may not operation areas such as construction zones. As autonomous vehicles expand their range to include metropolitan areas, they can experience decreased GPS accuracy.  This occurs when the vehicle is surrounded by tall buildings and can induce multipath effects in the GPS.  If the vehicle does localize correctly then it may offer a higher level of autonomous support than is safe.  Our solution to this challenge is to detect traffic signs and use them for localizing to a known map of traffic signs.  We use slam to construct a local traffic sign point cloud.  Then we use a Semantic Iterative Closest Point algorithm to correlate the local point cloud to a global point cloud.
+Many of today's autonomous and semi-autonomous vehicles rely heavily on the ability to localize correctly to a known map. As autonomous vehicles expand their range to include metropolitan areas, they can experience decreased GPS accuracy due to the multipath effects in the GPS signal, which can cause errors in the localization. We h  We have developed a solution that uses a factor graph based SLAM method  Our solution to this challenge is to detect traffic signs and use them for localizing to a known map of traffic signs.  We use slam to construct a local traffic sign point cloud.  Then we use a Semantic Iterative Closest Point algorithm to correlate the local point cloud to a global point cloud.
 
 \end{abstract}
 
@@ -68,7 +68,18 @@ Our approach is to first use vehicle sensor data, specifically odometry, GPS mea
 
 \section{METHODS}
 
+\begin{figure}[thpb]
+  \centering
+  \includegraphics[width=\linewidth]{Methods_Flow_Chart.png}
+  \caption{Algorithm Flow Chart}
+  \label{fig:flowchart}
+\end{figure}
+
+This section will describe the methods we used to implement this algorithm, Figure \ref{fig:flowchart} shows the overall flowchart of our algorithm, which will be broken down through this section.
+
 \subsection{Vehicle Input Data Processing}
+
+The vehicle input data processing
 
 The following vehicle sensor data was collected in a drive through the urban city of Chicago:
 \begin{itemize}
