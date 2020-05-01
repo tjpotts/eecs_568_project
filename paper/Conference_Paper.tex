@@ -29,6 +29,7 @@
 %\usepackage{times} % assumes new font selection scheme installed
 %\usepackage{amsmath} % assumes amsmath package installed
 %\usepackage{amssymb}  % assumes amsmath package installed
+\usepackage{amsfonts}
 
 \title{\LARGE \bf
 Improving Vehicle Localization in Urban Canyons using SLAM and Semantic Point Cloud Registration
@@ -74,7 +75,16 @@ Map Data Processing Placeholder
 
 \subsection{Simultaneous Localization and Mapping}
 
-SLAM data processing placeholder
+In order to generate an initial trajectory estimate and local map of observed landmarks, we utilize a factor graph based SLAM method <REFERENCE>.
+The variables in our factor graph consist of vehicle poses $X_t \in \marthrm{SE}(2)$ and landmark positions $L_n \in \mathbb{R}^2$.
+Our vehicle data provides longitudinal velocity and yaw rate which can be combined into odometry factors $u_t \in \mathfrak{se}(2)$ between poses $X_t$ and $X_{t+1}$.
+The GPS measurements $z_t \in \mathbb{R}^2$ are used as prior factors on the translational component of the current vehicle pose $X_t$ at the time that the measurement is obtained. Due to the difference in sampling rate of odometry and GPS data, not all poses will have an associated prior factor.
+Each landmark observation consists of a landmark identifier $n$ and a distance to the landmark $v_i \in \mathbb{R}^2$ relative to the vehicle frame which is added as a factor between the pose $X_t$ at the time the measurement is obtained and the landmark location $L_n$.
+An example simplified factor graph is shown in <FIGURE>.
+
+Variables and factors are added to the graph iteratively as new measurements become available.
+To solve the factor graph we make use of the ISAM2 algorithm <REFERENCE> which internally converts the factor graph into a Bayes tree before optimizing. This approach allows for fast updates to variable estimates when adding new factors to the graph without the need for periodic batch relinearization or reordering.
+Our final local map is the set of points of the best estimates of $L_n$ along with their semantic classes.
 
 \subsection{Semantic Point Cloud Registration}
 The odometry information used in the SLAM algorithm accumulates error over time. Without proper handling, this can cause the estimated trajectory to diverge from the true trajectory. The routine GPS signals received by the vehicle help to correct this (often they can give an acceptable level of localization by themselves), but these are also prone to error in certain circumstance, as discussed. This problem was alleviated by using a Semantic Iterative Closet Point (SICP) auces a transformation from the estimated, locally observed landmark locations to the known, global locations. This transformation can then be applied to the estimated vehicle trajectory to improve the accuracy of the estimate. 
