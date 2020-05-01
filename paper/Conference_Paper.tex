@@ -11,7 +11,7 @@
 
 \overrideIEEEmargins                                      % Needed to meet printer requirements.
 
-%In case you encounter the following error:
+%In case you encounter the following efrror:
 %Error 1010 The PDF file may be corrupt (unable to open PDF file) OR
 %Error 1000 An error occurred while parsing a contents stream. Unable to analyze the PDF file.
 %This is a known problem with pdfLaTeX conversion filter. The file cannot be opened with acrobat reader
@@ -33,6 +33,7 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{amssymb}
+\usepackage{hyperref}
 
 \title{\LARGE \bf
 Improving Vehicle Localization in Urban Canyons using SLAM and Semantic Point Cloud Registration
@@ -52,7 +53,7 @@ Email: ajaeckel@umich.edu, ryajones@umich.edu, tpotts@umich.edu, rbaskara@umich.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-Many of today's autonomous and semi-autonomous vehicles rely heavily on the ability to localize correctly to a known map. As autonomous vehicles expand their range to include metropolitan areas, they can experience decreased GPS accuracy due to the multipath effects in the GPS signal, which can cause errors in the localization. We h  We have developed a solution that uses a factor graph based SLAM method  Our solution to this challenge is to detect traffic signs and use them for localizing to a known map of traffic signs.  We use slam to construct a local traffic sign point cloud.  Then we use a Semantic Iterative Closest Point algorithm to correlate the local point cloud to a global point cloud.
+Many of today's autonomous and semi-autonomous vehicles rely heavily on the ability to localize correctly to a known map. As autonomous vehicles expand their range to include metropolitan areas, they can experience decreased GPS accuracy due to the multi-path effects in the GPS signal, which can cause errors in the vehicle localization. We have developed a method to more accurately recover the true vehicle trajectory, even with noisy GPS signal data. Our solution takes as inputs vehicle odometry data in the form of vehicle speed and yaw rate, observed landmarks in the form of road sign types and location relative to the vehicle, and noisy GPS data. It uses a factor graph based SLAM method to estimate the vehicle trajectory and to generate a map of local landmarks relative to that trajectory. It then compares that map of local landmarks to a global known map of landmarks by using a semantic ICP algorithm which registers the local map to the global map, and generates a transformation in SE(2) from local position to global position. This transformation can then be applied to the estimated trajectory to recover the true vehicle trajectory more accurately. We were able to accurately recover the true trajectory of the vehicle as it drove through Chicago, even with GPS data that had been offset to simulate corruption caused by the multi-path effect on GPS signals. In this report we describe the implementation of this algorithm, interpret the results, and discuss the algorithm's limitations and potential ideas to solve those limitations in future work.
 
 \end{abstract}
 
@@ -202,6 +203,15 @@ Furthermore, there were only 15 matching road-sign labels from the vehicle data 
 
 A major limitation to the SICP algorithm is the algorithm's reliance on an accurate initial transform. If the GPS input data used for the initial transform is offset by too much, then the algorithm would find nearest neighbors in the wrong area, and converge to an incorrect transformation. This is especially true in a large city where the streets are likely to be arranged in a grid, with repeating patterns in the landmark map, such as stop signs at every intersection in an area. If the observed landmarks are arranged in a significantly similar pattern to the landmarks on adjacent streets, then even an offset of the size of one city block could cause a convergence to the wrong transformation. Additionally, minor changes in the angle of rotation between the local and global landmark maps can cause the algorithm to converge to the incorrect transform. This is also especially true when dealing with vehicle trajectories, as even a minor angle of rotation can cause drift that is hundreds or thousands of meters. The routine GPS input data helps to lessen the impact of this, as even noisy GPS data will give a good estimate of the direction traveled over the course of a drive through a city. 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addtolength{\textheight}{-5cm}   % This command serves to balance the column lengths
+                                  % on the last page of the document manually. It shortens
+                                  % the textheight of the last page by a suitable amount.
+                                  % This command does not take effect until the next page
+                                  % so it should come on the page before the last. Make
+                                  % sure that you do not shorten the textheight too much.
+
 \section{FUTURE WORK}
 
 \subsection{Additional Landmark Information}
@@ -224,18 +234,24 @@ The SICP algorithm used in this project was fairly simple, and could often conve
 \end{itemize}
 
 \subsection{SLAM Constraints}
-Another idea which we would like to explore in further is adding constraints on the landmarks when we have well correlated points.  We have considered that if the average distance between the corrected point cloud and the assosiated points in the target point cloud is low enough and its variance is low enough as well then perhaps we can constrain the land marks to be be  coupled to the believed location.  We think that we could achieve this by adding the location belief as a prior for the local landmarks in the SLAM algorithm.
+Another idea which we would like to explore in further is adding new constraints on the landmarks when we have well correlated points.  We have considered that if the average distance between the corrected point cloud and the associated points in the target point cloud is low enough, and its variance is low enough as well, then perhaps we can constrain the landmarks to be be coupled to the believed location.  We think that we could achieve this by adding the location belief as a prior for the local landmarks in the SLAM algorithm.
 
-\addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
+
+\section{SOURCE CODE AND VIDEO}
+
+The source code for this project is located at: \url{https://github.com/tjpotts/eecs_568_project}
+
+The video of the project explanation is located at: \url{https://www.youtube.com/watch?v=auPj7Jhl-1s}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addtolength{\textheight}{-8cm}   % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
                                   % the textheight of the last page by a suitable amount.
                                   % This command does not take effect until the next page
                                   % so it should come on the page before the last. Make
                                   % sure that you do not shorten the textheight too much.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 
 \begin{thebibliography}{99}
