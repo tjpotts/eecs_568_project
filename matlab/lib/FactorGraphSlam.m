@@ -121,43 +121,8 @@ classdef FactorGraphSlam < handle
         function optimize(obj)
             import gtsam.*
 
-            %{
-            % Generate a list of pose indexes we want to marginalize out
-            marginalize_pose_first = obj.pose_marginalized+1;
-            marginalize_pose_last = max([obj.pose_marginalized obj.pose_index-100]);
-            marginalize_list = marginalize_pose_first:marginalize_pose_last;
-            marginalize_keylist = gtsam.utilities.createKeyList(marginalize_list');
-
-            % Create a keygroupmap to group all of the symbols we want to marginalize separately from those we do not
-            % in the bayes tree
-            % Group 0 = marginalize group
-            % Group 1 = others
-            marginalize_keygroupmap = gtsam.KeyGroupMap();
-            reelim_keylist = gtsam.KeyList();
-            for i = marginalize_pose_first:obj.pose_index
-                if (i <= marginalize_pose_last)
-                    marginalize_keygroupmap.insert2(i,0);
-                else
-                    marginalize_keygroupmap.insert2(i,1);
-                end
-                %reelim_keylist.push_back(i);
-            end
-            for i = 1:size(obj.landmarks,1)
-                % Landmarks are never marginalized
-                landmark_symbol = gtsam.symbol('L', obj.landmarks(i,1));
-                marginalize_keygroupmap.insert2(landmark_symbol, 1);
-                %reelim_keylist.push_back(landmark_symbol);
-            end
-
-            % Create a list of all other keys that need to be reeliminated in the Bayes tree
-
-            %}
-
             % Run ISAM2 and get our new estimate of our current pose and map
             obj.isam.update(obj.new_factors, obj.initial_estimates);
-            %obj.isam.update(obj.new_factors, obj.initial_estimates, gtsam.FactorIndices(), marginalize_keygroupmap, gtsam.KeyList(), reelim_keylist, false);
-            %obj.isam.marginalizeLeaves(marginalize_keylist);
-            %obj.pose_marginalized = marginalize_pose_last;
 
             obj.current_pose = obj.isam.calculateEstimatePose2(obj.pose_index);
 

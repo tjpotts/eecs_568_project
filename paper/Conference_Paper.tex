@@ -23,7 +23,7 @@
 % on the last page of the document
 
 % The following packages can be found on http:\\www.ctan.org
-%\usepackage{graphics} % for pdf, bitmapped graphics files
+\usepackage{graphicx} % for pdf, bitmapped graphics files
 %\usepackage{epsfig} % for postscript graphics files
 %\usepackage{mathptmx} % assumes new font selection scheme installed
 %\usepackage{times} % assumes new font selection scheme installed
@@ -71,15 +71,22 @@ Map Data Processing Placeholder
 
 \subsection{Simultaneous Localization and Mapping}
 
-In order to generate an initial trajectory estimate and local map of observed landmarks, we utilize a factor graph based SLAM method <REFERENCE>.
+\begin{figure}[thpb]
+  \centering
+  \includegraphics[width=\linewidth]{factor_graph.png}
+  \caption{Example factor graph}
+  \label{fig:factorgraph}
+\end{figure}
+
+In order to generate an initial trajectory estimate and local map of observed landmarks, we utilize a factor graph based SLAM method.
 The variables in our factor graph consist of vehicle poses $X_t \in \mathrm{SE}(2)$ and landmark positions $L_n \in \mathbb{R}^2$.
 Our vehicle data provides longitudinal velocity and yaw rate which can be combined into odometry factors $u_t \in \mathfrak{se}(2)$ between poses $X_t$ and $X_{t+1}$.
 The GPS measurements $z_t \in \mathbb{R}^2$ are used as prior factors on the translational component of the current vehicle pose $X_t$ at the time that the measurement is obtained. Due to the difference in sampling rate of odometry and GPS data, not all poses will have an associated prior factor.
 Each landmark observation consists of a landmark identifier $n$ and a distance to the landmark $v_i \in \mathbb{R}^2$ relative to the vehicle frame which is added as a factor between the pose $X_t$ at the time the measurement is obtained and the landmark location $L_n$.
-An example simplified factor graph is shown in <FIGURE>.
+An example simplified factor graph is shown in Figure \ref{fig:factorgraph}.
 
 Variables and factors are added to the graph iteratively as new measurements become available.
-To solve the factor graph we make use of the ISAM2 algorithm <REFERENCE> which internally converts the factor graph into a Bayes tree before optimizing. This approach allows for fast updates to variable estimates when adding new factors to the graph without the need for periodic batch relinearization or reordering.
+To solve the factor graph we make use of the ISAM2 algorithm \cite{ref:isam} which internally converts the factor graph into a Bayes tree before optimizing. This approach allows for fast updates to variable estimates when adding new factors to the graph without the need for periodic batch relinearization or reordering.
 Our final local map is the set of points of the best estimates of $L_n$ along with their semantic classes.
 
 \subsection{Semantic Point Cloud Registration}
@@ -99,12 +106,46 @@ Trajectory Correction Placeholder
 
 \section{RESULTS}
 
+\begin{figure}[thpb]
+  \centering
+  \includegraphics[width=\linewidth]{sim_results.png}
+  \caption{Simulation results after observing 7 matched landmarks}
+  \label{fig:simresults}
+\end{figure}
 
-\subsection{Results subsections placeholder} 
+\begin{figure}[thpb]
+  \centering
+  \includegraphics[width=\linewidth]{sicp_err.png}
+  \caption{SICP error vs. Number of matched landmarks}
+  \label{fig:sicperr}
+\end{figure}
 
+\begin{figure}[thpb]
+  \centering
+  \includegraphics[width=\linewidth]{traj_err.png}
+  \caption{Corrected trajectory error vs. Number of matched landmarks}
+  \label{fig:trajerr}
+\end{figure}
 
-Results placeholder
+\begin{figure}[thpb]
+  \centering
+  \includegraphics[width=\linewidth]{sicp_traj_err.png}
+  \caption{Corrected trajectory error vs. SICP error}
+  \label{fig:sicptrajerr}
+\end{figure}
 
+The data used to evaluate our method was taken from an hour long drive in downtown Chicago.
+In order to test our methods ability to recover the true trajectory of the vehicle in the presence of bad GPS data, the collected GPS data was corrupted by adding an offset before passing it into the SLAM algorithm.
+The GPS, odometry and landmark observation data was then replayed and passed into a MATLAB program implementing our algorithm.
+
+In practice, many of the landmark types which were detected on the vehicle were not available in the map data. Although such landmarks can be useful in improving the trajectory estimate directly output from the SLAM algorithm, they are of no use when attempting to align the local and global maps.
+As a result, a significant amount of driving time is required to obtain enough matching landmark observations in order to recover the true vehicle trajectory.
+
+Figure \ref{fig:simresults} shows the results after finding 7 observed landmarks whose classes matched those found in the global map, which demonstrates that the true trajectory can be recovered with good accuracy.
+Figure \ref{fig:sicperr} shows the error between the local map and global map after performing SICP alignment.
+Figure \ref{fig:trajerr} shows the error between the corrected trajectory and the ground truth trajectory. This data shows that only a few points are necessary to recover the true trajectory. However, the dataset used had errors in some of the observed semantic classes which caused incorrect results from the SICP algorithm once those measurements were obtained.
+
+Figure \ref{fig:sicptrajerr} shows the correlation between the SICP and corrected trajectory errors. There is a high correlation between the SICP error, which is observable without knowing the ground truth, and the error in the corrected trajectory. This indicates that the SICP error can be used as a good metric for determining whether or not the trajecory correction was successful.
 
 \section{LIMITATIONS}
 
@@ -215,6 +256,7 @@ References are important to the reader; therefore, each citation must be complet
 \bibitem{c18} J. Williams, 'Narrow-band analyzer (Thesis or Dissertation style),' Ph.D. dissertation, Dept. Elect. Eng., Harvard Univ., Cambridge, MA, 1993. 
 \bibitem{c19} N. Kawasaki, 'Parametric study of thermal and chemical nonequilibrium nozzle flow,' M.S. thesis, Dept. Electron. Eng., Osaka Univ., Osaka, Japan, 1993.
 \bibitem{c20} J. P. Wilkinson, 'Nonlinear resonant circuit devices (Patent style),' U.S. Patent 3 624 12, July 16, 1990. 
+\bibitem{ref:isam} M. Kaess, 'iSAM2: Incremental Smoothing and Mapping Using the Bayes Tree,' Intl. J. of Robotics Research, 31(2), 216-235.
 
 
 
