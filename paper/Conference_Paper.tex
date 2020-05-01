@@ -120,7 +120,7 @@ T\textsuperscript{*} $\leftarrow$ T\textsuperscript{init}
 		\State T\textsuperscript{old} $\leftarrow$ T\textsuperscript{*} //set previous T to current T
 		\State $\mathcal{I} = nnsearch{(\mathcal{X}_s, \mathcal{X}_t, \mathcal{S},  \mathrm{T\textsuperscript{old})}}$ // find nearest neighbor of same class in target for each source
 		\State T\textsuperscript{*} $\leftarrow$ argmax\textsubscript{T $\in$ SE(3)} $f$\textsubscript{ICP}(T; $R|\mathcal{X}_t, \mathcal{X}_s, \mathcal{I})$ //optimize over SE(3) using ICP
-		\If d\textsubscript{SE(3)}(T\textsuperscript{old}, T\textsuperscript{*}) $ < \epsilon$
+		\If{d\textsubscript{SE(3)}(T\textsuperscript{old}, T\textsuperscript{*}) $ < \epsilon$}
 			\State converged $\leftarrow$ true	
 		\EndIf
 	\EndWhile
@@ -132,11 +132,6 @@ T\textsuperscript{*} $\leftarrow$ T\textsuperscript{init}
 The local and global landmark maps are used as the source and target point clouds, respectively. The initial transformation is estimated by using the previous GPS measurements. These most likely are not completely accurate but should be good enough for an initial estimate. For each landmark in the local map, we find the nearest neighbor \cite{cNN} of the same label in the global map. If a nearest neighbor of the same label cannot be found, or if it is further away than is allowable (tunable parameter), it is ignored for this iteration. Once a correlation between landmarks in the local map and target map have been found, a linear least squares problem is solved, which will produce a transformation. This transformation is then applied to the points in the local landmark map, and the process is repeated until convergence or the maximum number of iterations (tunable parameter) is reached. If the algorithm does not converge, or if it does converge, but the average distance between correlated landmarks in the transformed local map and the global map is too high (tunable paramater), then it will be ignored. Otherwise, the transformation is applied to the estimated trajectory to correct for the drift caused by noisy odometry and GPS data.
 
 The SICP algorithm needs a relatively large number of observed landmarks in the local map in order to accurately perform the semantic map registration, or else there is a risk of the algorithm not converging or converging to the wrong transformation. Since the maps we are using include 3 dimensions, we will need at least six different landmarks, but it is preferable to have more than that. It takes time for the local landmark map to be created as the vehicle must drive around and discover new landmarks to be added to it. Additionally, for the SICP algorithm to be effective, those local landmarks must have corresponding landmarks of the same time in the local map. This necessitates that the SICP algorithm be run at a low frequency compared to the SLAM algorithm. This rate is heavily determined by the use case. A dense city, for example, will likely have more landmarks per area than a smaller city or rural area. In the case of this project, the SICP algorithm was run every 15 seconds of simulated time.
-
-
-\subsection{Trajectory Correction}
-
-Trajectory Correction Placeholder
 
 
 \section{RESULTS}
@@ -198,46 +193,26 @@ A major limitation to the SICP algorithm is the algorithm's reliance on an accur
 
 \section{FUTURE WORK}
 
-\subsection{subsection placeholder}
+\subsection{Additional Landmark Information}
+For this project, we only used road-signs as our landmarks for the SLAM and SICP algorithms. While this works well in some cases, it can also cause issues, as discussed. One major area of exploration is to expand the types of landmark information that is taken into account. This would hopefully further the ability of the SLAM algorithm to predict the correct trajectory and also give the SICP algorithm additional data points to use in the semantic registration. Below are some ideas of how this could be implemented:
 
-future work placeholder
+\begin{itemize}
+\item Expand the number of different sign types available in the global map to more closely match the number of sign types seen in the vehicle data. This could also include traffic lights.
+\item Include sign types that are more unique, which would allow for better registration. These could include street signs that include the name of the street, storefront/business signs or signs that mark unique locations such as monuments or parks.
+\item Add other road information that could help localize. This could include factors like the number of lanes on the road, road width, road curvature or road type.
+\end{itemize}
 
+\subsection{SICP}
+The SICP algorithm used in this project was fairly simple, and could often converge to the incorrect location if the initial guess was off. While improving the available landmark information would lead to improvements in the SICP algorithm, improving the SICP algorithm could be a potential major increase the performance of this function. Below are some ideas of how this could be implemented:
 
-For real time implementation, we can construct a high-speed ICP algorithm by combining variants of ICP as discussed in “Efficient Variants of the ICP Algorithm” by Szymon Rusinkiewicz and Marc Levoy, Stanford University. Instead of using all the points, we can use random sampling with constant weighting and specifying a distance threshold for rejecting outlier pairs. To generate point correspondences, projection-based algorithm can be used instead of closest point method thereby reducing the wrong correlation. This algorithm can be combined with a point-to-plane error metric and the standard “select-match-minimize” ICP iteration. 
-
-
-\section{HOW TO CREATE FIGURES AND TABLES REFERENCE - TO BE DELETED BEFORE SUBMISSION}
-\subsection{Figures and Tables}
-
-Positioning Figures and Tables: Place figures and tables at the top and bottom of columns. Avoid placing them in the middle of columns. Large figures and tables may span across both columns. Figure captions should be below the figures; table heads should appear above the tables. Insert figures and tables after they are cited in the text. Use the abbreviation 'Fig. 1', even at the beginning of a sentence.
-
-\begin{table}[h]
-\caption{An Example of a Table}
-\label{table_example}
-\begin{center}
-\begin{tabular}{|c||c|}
-\hline
-One & Two\\
-\hline
-Three & Four\\
-\hline
-\end{tabular}
-\end{center}
-\end{table}
+\begin{itemize}
+\item Perform semantic GICP instead of ICP to consider the covariance of normal vectors to distributions of landmarks that are near each other. Road-signs will generally follow a specific distribution, with signs near or on the road, and facing the direction of travel on that road. This fact could be used when registering the local landmark map to the global landmark map to allow better correlation between landmarks. This idea of semantic GICP is discussed in Parison et al. \cite{cGICP}
+\item Instead of running the SICP algorithm once every iteration, it could be run multiple times with different initial guesses. For each resulting transformation, the average distance between the transformed local landmarks and the global landmarks could be computed, and the transformation with the lowest average distance away could be taken.
+\item Research other ICP algorithms that have been developed by researchers that already improve upon the ICP algorithm used here. For example, Szymon Rusinkiewicz and Marc Levoy of Stanford University[NEED CITATION HERE] have developed an ICP algorithm that uses a random, weighted, sampling of the point clouds and a different method for determining correlation instead of closes point as we used in this project.
+\item Use known geographical information to infer potential paths the vehicle could take. For example, if we know that the downtown of a city has only roads in a grid going north-south and east-west, then we know that the trajectory must be one of those directions. A probabilistic method of determining which path the vehicle could turn could be used to register points more accurately.
+\end{itemize}
 
 
-   \begin{figure}[thpb]
-      \centering
-      \framebox{\parbox{3in}{We suggest that you use a text box to insert a graphic (which is ideally a 300 dpi TIFF or EPS file, with all fonts embedded) because, in an document, this method is somewhat more stable than directly inserting a picture.
-}}
-      %\includegraphics[scale=1.0]{figurefile}
-      \caption{Inductance of oscillation winding on amorphous
-       magnetic core versus DC bias magnetic field}
-      \label{figurelabel}
-   \end{figure}
-   
-
-Figure Labels: Use 8 point Times New Roman for Figure labels. Use words rather than symbols or abbreviations when writing Figure axis labels to avoid confusing the reader. As an example, write the quantity 'Magnetization', or 'Magnetization, M', not just 'M'. If including units in the label, present them within parentheses. Do not label axes only with units. In the example, write 'Magnetization (A/m)' or 'Magnetization {A[m(1)]}', not just 'A/m'. Do not label axes with a ratio of quantities and units. For example, write 'Temperature (K)', not 'Temperature/K.'
 
 \addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
@@ -248,26 +223,6 @@ Figure Labels: Use 8 point Times New Roman for Figure labels. Use words rather t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section*{APPENDIX}
-
-Appendixes should appear before the acknowledgment.
-
-\section*{ACKNOWLEDGMENT}
-
-The preferred spelling of the word 'acknowledgment' in America is without an 'e' after the 'g'. Avoid the stilted expression, 'One of us (R. B. G.) thanks . . .'  Instead, try 'R. B. G. thanks'. Put sponsor acknowledgments in the unnumbered footnote on the first page.
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-References are important to the reader; therefore, each citation must be complete and correct. If at all possible, references should be commonly available publications.
 
 
 
