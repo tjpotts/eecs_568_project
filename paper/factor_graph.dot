@@ -1,35 +1,35 @@
 graph {
-    P1 [pos="0,0!"]
-    P2 [pos="1,0!"]
-    P3 [pos="2,0!"]
-    P4 [pos="3,0!"]
-    P5 [pos="4,0!"]
-    P6 [pos="5,0!"]
-    P7 [pos="6,0!"]
-    
-    L1 [pos="0.5,1!"]
-    L2 [pos="4,1!"]
-    
-    G1 [pos="0,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
-    G2 [pos="3,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
-    G3 [pos="6,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
-    
-    P1 -- P2
-    P2 -- P3
-    P3 -- P4
-    P4 -- P5
-    P5 -- P6
-    P6 -- P7
-    
-    G1 -- P1
-    G2 -- P4
-    G3 -- P7
-    
-    L1 -- P1
-    L1 -- P2
-    
-    L2 -- P4
-    L2 -- P5
-    L2 -- P6
+    X0 [pos="0,0!", label=<X<SUB>0</SUB>>]
+    X1 [pos="1,0!", label=<X<SUB>1</SUB>>]
+    X2 [pos="2,0!", label=<X<SUB>2</SUB>>]
+    X3 [pos="3,0!", label=<X<SUB>3</SUB>>]
+    X4 [pos="4,0!", label=<X<SUB>4</SUB>>]
+    X5 [pos="5,0!", label=<X<SUB>5</SUB>>]
+    X6 [pos="6,0!", label=<X<SUB>6</SUB>>]
+
+    L0 [pos="0.5,1!", label=<L<SUB>6</SUB>>]
+    L1 [pos="4,1!", label=<L<SUB>6</SUB>>]
+
+    G0 [pos="0,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
+    G3 [pos="3,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
+    G6 [pos="6,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
+
+    X0 -- X1 [label=<u<SUB>0</SUB>>]
+    X1 -- X2 [label=<u<SUB>1</SUB>>]
+    X2 -- X3 [label=<u<SUB>2</SUB>>]
+    X3 -- X4 [label=<u<SUB>3</SUB>>]
+    X4 -- X5 [label=<u<SUB>4</SUB>>]
+    X5 -- X6 [label=<u<SUB>5</SUB>>]
+
+    G0 -- X0 [label=<z<SUB>1</SUB>>]
+    G3 -- X3 [label=<z<SUB>3</SUB>>]
+    G6 -- X6 [label=<z<SUB>6</SUB>>]
+
+    L0 -- X0 [label=<v<SUB>0</SUB>>]
+    L0 -- X1 [label=<v<SUB>1</SUB>>]
+
+    L1 -- X3 [label=<v<SUB>2</SUB>>]
+    L1 -- X4 [label=<v<SUB>3</SUB>>]
+    L1 -- X5 [label=<v<SUB>4</SUB>>]
 }
 
