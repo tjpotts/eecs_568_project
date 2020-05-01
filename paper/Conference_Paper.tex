@@ -98,9 +98,14 @@ Results placeholder
 
 \section{LIMITATIONS}
 
-\subsection{subsection placeholder}
+\subsection{Variable density of source and target cloud}
 
-limitations placeholder
+
+For the Semantic ICP algorithm the traffic signs in HERE maps are used as the target cloud. The source cloud for the Point Cloud Registration came from the drive data of mobile platform. The drive data has a high density of 450 different traffic signs in the sample drive around Chicago downtown. But the corresponding HERE HD global map have a low density of sign data and with fewer sign types. Our algorithm could find matching correspondences between 12 and 15 semantic traffic sign types, even though the drive data has hundreds of different traffic sign types. The following are some of the traffic signs with matching correspondences between source and target cloud; Pedestrian crossing warning, STOP sign, YIELD, Road Narrows Right, and Slippery When Wet.
+\subsection{Mislabeled Semantics}
+
+Sometimes, the sign types stored in the drive data are not binned perfectly. There are instances in which the traffic sign types are mislabeled or stored under different types. In our case, the sign type 46 (NO TURN ON RED sign) had many incorrect labels which resulted in wrong correspondences and caused divergence from the solution. We had to remove that specific sign type from the semantics to get the SICP to function correctly.
+
 
 
 \section{FUTURE WORK}
@@ -108,6 +113,9 @@ limitations placeholder
 \subsection{subsection placeholder}
 
 future work placeholder
+
+
+For real time implementation, we can construct a high-speed ICP algorithm by combining variants of ICP as discussed in “Efficient Variants of the ICP Algorithm” by Szymon Rusinkiewicz and Marc Levoy, Stanford University. Instead of using all the points, we can use random sampling with constant weighting and specifying a distance threshold for rejecting outlier pairs. To generate point correspondences, projection-based algorithm can be used instead of closest point method thereby reducing the wrong correlation. This algorithm can be combined with a point-to-plane error metric and the standard “select-match-minimize” ICP iteration. 
 
 
 \section{HOW TO CREATE FIGURES AND TABLES REFERENCE - TO BE DELETED BEFORE SUBMISSION}
