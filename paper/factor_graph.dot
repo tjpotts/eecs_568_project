@@ -1,0 +1,35 @@
+graph {
+    P1 [pos="0,0!"]
+    P2 [pos="1,0!"]
+    P3 [pos="2,0!"]
+    P4 [pos="3,0!"]
+    P5 [pos="4,0!"]
+    P6 [pos="5,0!"]
+    P7 [pos="6,0!"]
+    
+    L1 [pos="0.5,1!"]
+    L2 [pos="4,1!"]
+    
+    G1 [pos="0,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
+    G2 [pos="3,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
+    G3 [pos="6,-0.75!", width="0.1", height="0.1", label="", fillcolor="black", style="filled"]
+    
+    P1 -- P2
+    P2 -- P3
+    P3 -- P4
+    P4 -- P5
+    P5 -- P6
+    P6 -- P7
+    
+    G1 -- P1
+    G2 -- P4
+    G3 -- P7
+    
+    L1 -- P1
+    L1 -- P2
+    
+    L2 -- P4
+    L2 -- P5
+    L2 -- P6
+}
+
