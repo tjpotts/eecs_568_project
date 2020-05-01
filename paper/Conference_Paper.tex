@@ -30,6 +30,9 @@
 %\usepackage{amsmath} % assumes amsmath package installed
 %\usepackage{amssymb}  % assumes amsmath package installed
 \usepackage{amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amssymb}
 
 \title{\LARGE \bf
 Improving Vehicle Localization in Urban Canyons using SLAM and Semantic Point Cloud Registration
@@ -57,11 +60,11 @@ Abstract placeholder
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{INTRODUCTION}
 
-Many autonomous and semi-autonomous systems are not robust enough to operate in all areas of the world. Low quality of lane lines, high road curvature, complex road layouts, and other environmental noise factors can cause the performance of these systems to decrease to unacceptable levels. A common strategy to deal with these noise factors is to restrict the degree of autonomous support offered in areas that have high risk due to these environmental noise factors. This practice is called geo-fencing. In systems that employee geo-fencing it is critical that the system is able to accurately localize itself within the city. If the vehicle localizes incorrectly, then a higher degree of autonomous support may be offered than is safe for that area. 
+Many autonomous and semi-autonomous systems are not robust enough to operate in all areas of the world. Low quality of lane markings, high road curvature, complex road layouts, and other environmental noise factors can cause the performance of these systems to decrease to unacceptable levels. A common strategy to deal with these noise factors is to restrict the degree of autonomous support offered in these areas. This practice is called geo-fencing. In systems that employee geo-fencing it is critical that the system is able to accurately localize the vehicle within the city. If it localizes incorrectly, then a higher degree of autonomous support may be offered than is safe for that area. 
 
-In many areas, GPS is sufficient to determine the location of the vehicle. In some areas, however, this is more challenging. One area that offers a particular challenge are densely populated urban cities. In these areas GPS performance suffers due to the presence of tall buildings which create an effective urban canyon and induce multi-path effects in the GPS signals. When GPS becomes unreliable, we need another method for determining the current location of the vehicle.
+In many areas, GPS is sufficient to determine the location of the vehicle. In other areas, however, this is more challenging. One area that offers a particular challenge are densely populated urban cities. In these areas GPS performance suffers due to the presence of tall buildings which create an effective urban canyon and induce multi-path effects in the GPS signals. When GPS becomes unreliable, we need another method for determining the current location of the vehicle.
 
-Our approach is to first use vehicle sensor data, specifically odometry, GPS measurements, and observed street signs, to create local map of traffic sign landmarks and an estimated vehicle trajectory. This is done using a Simultaneous Localization and Mapping (SLAM) algorithm which combines all of this noisy sensor information to aid in the estimation, but is still subject to drift from the noisy data. As the vehicle drives through the area, this local landmark map that is built up over time is routinely compared to a known global map of the area using Semantic Iterative Closest Point algorithm (SICP). This algorithm will correlate the landmarks in the local map to the corresponding landmarks in the global map and produce a transformation that, if valid, can be applied to the vehicle trajectory estimate to correct that drift caused by the noisy data.
+Our approach is to first use vehicle sensor data, specifically odometry, GPS measurements, and observed street signs, to create local map of road sign landmarks and an estimated vehicle trajectory. This is done using a Simultaneous Localization and Mapping (SLAM) algorithm which combines all of this noisy sensor information to aid in the estimation, but is still subject to drift from the noisy data. As the vehicle drives through the area, this local landmark map that is built up over time is routinely compared to a known global map of the area using Semantic Iterative Closest Point algorithm (SICP). This algorithm will correlate the landmarks in the local map to the corresponding landmarks in the global map and produce a transformation that, if valid, can be applied to the vehicle trajectory estimate to correct that drift caused by the noisy data.
 
 \section{METHODS}
 
@@ -70,21 +73,18 @@ Our approach is to first use vehicle sensor data, specifically odometry, GPS mea
 The following vehicle sensor data was collected in a drive through the urban city of Chicago:
 \begin{itemize}
 \item Camera hardware and software system similar to cameras offered in production vehicles today. The camera detection software can detect approximately 400 different types of road-signs and calculate the location of those signs relative to the vehicle. 
-\item Yaw rate sensor to detect changes in vehicle yaw.
+\item Yaw rate sensor to detect changes in vehicle yaw angle.
 \item Velocity sensor to detect vehicle lateral and longitudinal velocity.
 \item GPS to calculate vehicle latitude and longitude coordinates.
 \end{itemize}
 
-The yaw rate and vehicle speed data were used to calculate 
+The yaw rate and vehicle speed data were used to calculate the relative pose odometry between time-steps. Those calculated poses, the observed road-sign landmarks and the GPS coordinates were used as inputs into the SLAM algorithm to generate an estimated trajectory and local landmark map. 
 
-The vehicle yaw rate and velocity was used to calculate the relative pose odometry between timesteps. The odometry, the landmarks (consisting of the traffic signs), and GPS coordinates were inputs into the SLAM algorithm which outputted a local landmark map. 
-The global landmark map was generated using HERE Maps. HERE is a global map supplier. We used two of their layers: the Advanced Navigation Attributes layer and the Topology-Geometry layer. The Advanced Navigation Attributes contains a listing of all known signs in a given area or tile. Each sign has sign type a corresponding segment Anchor Index which corresponds to a global segment ID and offset index (0-1) along the segment. The segment ID is then matched within the Road Topology and Geometry layer. The Road Topology and Geometry layer contains latitude and longitude points along a road. The offset index can then be used to find the latitude and longitude point of the sign.
-It is important to note that these road segments are piece wise linear and consequently the accuracy in the direction parallel to the road may be high, but the accuracy in the perpendicular direction will be low since we have no information about the sign location relative to the center of the road. Because of this limitation our algorithm at best may be off by half a road width or more. Since our main concern is localizing to the correct road, we believe that this is acceptable. 
+\subsection{Global Map Data}
 
+The global landmark map was generated using mapping data created by global map supplier HERE \cite{cHERE}. HERE provides global map data, structured into different layers, each of which contain different mapping information about that area. We used two of their layers: the Advanced Navigation Attributes layer and the Topology-Geometry layer. The Advanced Navigation Attributes contains a listing of all known road-signs in a given area, called a tile. Each sign object in this layer has a sign type, which is the actual type of sign it is, a corresponding segment Anchor Index, which corresponds to a global segment ID so it can be found on the map, and an offset index (0-1) which signifies how far along the global segment that sign is located. The segment ID is then matched within the Road Topology and Geometry layer, which contains the latitude and longitude points along that segment. The offset index can then be used to find the latitude and longitude point of the sign.
 
-\subsection{Map Data Processing}
-
-Map Data Processing Placeholder
+It is important to note that these road segments are piece wise linear. A consequence of this is that the accuracy of road-sign location data in the direction parallel to the road will be high, but the accuracy in the direction perpendicular to the road may be low because there is no information about the sign location relative to the center of the road. Due to this limitation, our global map road-sign location data used in the SICP algorithm may be off by a half-road width. Since our main concern is localizing to the correct road for geo-fencing, we believe that this margin is acceptable.
 
 \subsection{Simultaneous Localization and Mapping}
 
@@ -100,13 +100,31 @@ To solve the factor graph we make use of the ISAM2 algorithm <REFERENCE> which i
 Our final local map is the set of points of the best estimates of $L_n$ along with their semantic classes.
 
 \subsection{Semantic Point Cloud Registration}
-The odometry information used in the SLAM algorithm accumulates error over time. Without proper handling, this can cause the estimated trajectory to diverge from the true trajectory. The routine GPS signals received by the vehicle help to correct this (often they can give an acceptable level of localization by themselves), but these are also prone to error in certain circumstance, as discussed. This problem was alleviated by using a Semantic Iterative Closet Point (SICP) auces a transformation from the estimated, locally observed landmark locations to the known, global locations. This transformation can then be applied to the estimated vehicle trajectory to improve the accuracy of the estimate. 
+The odometry information used in the SLAM algorithm accumulates error over time. Without proper handling, this can cause the estimated trajectory to diverge from the true trajectory. The routine GPS signals received by the vehicle help to correct this (often they can give an acceptable level of localization by themselves), but these are also prone to error in certain circumstance, as discussed. This problem was alleviated by using a SICP algorithm to match the local map of landmarks, produced during the SLAM step, to a known global map of landmarks. Matching these landmarks produces a transformation from the estimated, locally observed landmark locations to the known, global locations. This transformation can then be applied to the estimated vehicle trajectory to improve the accuracy of the estimate. 
 
-The matching of the local map to the global map uses a variation of the ICP algorithm shown in the lecture slides (INSERT LECTURE REFERENCE HERE) that has been modified to include the semantic labelling of the vehicle input sign data. The code itself is built upon the gicp\_SE3 code written by Manni Ghaffari Jadidi [INSERT REFERENCE TO CODE HERE]. This code was modified to include semantic labeling in the nearest neighbor search and set the covariance normal to each point to the identity, removes the functionality of looking at distributions around points near each other. Pseudo-code for the algorithm is shows in FIGURE.lgorithm to match the local map of landmarks, produced during the SLAM step, to a known global map of landmarks. Matching these landmarks prod
+The matching of the local map to the global map uses a variation of the GICP algorithm presented by Parkison at al. \cite{cGICP}. This version has been modified to include the semantic labeling of the vehicle input sign data. The code itself is built upon the gicp\_SE3.m code written by Manni Ghaffari Jadidi \cite{cgicpse3}. This code was modified to include semantic labeling in the nearest neighbor search and sets the covariance normal to each point to the identity matrix to remove the functionality of looking at distributions around points near each other. Pseudo-code for the algorithm is shown below. One important note is that while the local and global maps are 2-dimensional (latitude and longitude) and the SLAM algorithm produces output in SE2, this function takes 3-dimensional data as an input, and produces a transformation in SE3. This was for the purpose of reusing the original code. Adding a zero vector as the third dimension, not calculating any translation along the z-axis, and only allowing rotations along the z-axis will have the same functionality.
 
-The local and global landmark maps are used as the source and target point clouds, respectively. The initial transformation is estimated by using the previous GPS measurements. These most likely are not completely accurate but should be good enough for an initial estimate. For each landmark in the local map, we find the nearest neighbor [INSERT REFERENCE HERE FOR NEAREST NEIGHBOR ALGORITHM] of the same label in the global map. If a nearest neighbor of the same label cannot be found, or if it is further away than is allowable (tunable parameter), it is ignored for this iteration. Once a correlation between landmarks in the local map and target map have been found, a linear least squares problem is solved, which will produce a transformation in SE3. This transformation is then applied to the local landmark map, and the process is repeated until convergence or the maximum number of iterations (tunable parameter) is reached. If the algorithm does not converge, or if it does converge, but the average distance between correlated landmarks in the transformed local map and the global map is too high, then it will be ignored. Otherwise, the transformation is applied to the estimated trajectory to correct for the odometry and GPS drift.
+\begin{algorithm}[ht]
+\label{alg:sicpse3}
+\begin{algorithmic}[1]
+\Require  Initial Transformation T\textsuperscript{init}, target point cloud $\mathcal{X}_t$, source point cloud $\mathcal{X}_s$, semantic labels $\mathcal{S}$\\
+T\textsuperscript{*} $\leftarrow$ T\textsuperscript{init}
+	\While{not converged}
+		\State T\textsuperscript{old} $\leftarrow$ T\textsuperscript{*} //set previous T to current T
+		\State $\mathcal{I} = nnsearch{(\mathcal{X}_s, \mathcal{X}_t, \mathcal{S},  \mathrm{T\textsuperscript{old})}}$ // find nearest neighbor of same class in target for each source
+		\State T\textsuperscript{*} $\leftarrow$ argmax\textsubscript{T $\in$ SE(3)} $f$\textsubscript{ICP}(T; $R|\mathcal{X}_t, \mathcal{X}_s, \mathcal{I})$ //optimize over SE(3) using ICP
+		\If d\textsubscript{SE(3)}(T\textsuperscript{old}, T\textsuperscript{*}) $ < \epsilon$
+			\State converged $\leftarrow$ true	
+		\EndIf
+	\EndWhile
+	\State return T\textsuperscript{*}
+\caption{Semantic ICP}
+\end{algorithmic}
+\end{algorithm}
 
-The SICP algorithm needs a relatively large number of observed landmarks in the local map in order to accurately perform the semantic map registration, or else there is a risk of the algorithm not converging or converging to the wrong transformation. Since the maps we are using include 3 dimensions, we will need at least six different landmarks, but it is preferable to have more than that. It takes time for the local landmark map to be created as the vehicle must drive around and discover new landmarks to be added to it. Additionally, for the SICP algorithm to be effective, those local landmarks must have corresponding landmarks of the same time in the local map. This necessitates that the SICP algorithm be run at a low frequency compared to the SLAM algorithm This rate is heavily determined by the use case. A dense city, for example, will likely have more landmarks per area than a smaller city or rural area. In the case of this project, the SICP algorithm was run every 15 seconds of simulated time.
+The local and global landmark maps are used as the source and target point clouds, respectively. The initial transformation is estimated by using the previous GPS measurements. These most likely are not completely accurate but should be good enough for an initial estimate. For each landmark in the local map, we find the nearest neighbor \cite{cNN} of the same label in the global map. If a nearest neighbor of the same label cannot be found, or if it is further away than is allowable (tunable parameter), it is ignored for this iteration. Once a correlation between landmarks in the local map and target map have been found, a linear least squares problem is solved, which will produce a transformation. This transformation is then applied to the points in the local landmark map, and the process is repeated until convergence or the maximum number of iterations (tunable parameter) is reached. If the algorithm does not converge, or if it does converge, but the average distance between correlated landmarks in the transformed local map and the global map is too high (tunable paramater), then it will be ignored. Otherwise, the transformation is applied to the estimated trajectory to correct for the drift caused by noisy odometry and GPS data.
+
+The SICP algorithm needs a relatively large number of observed landmarks in the local map in order to accurately perform the semantic map registration, or else there is a risk of the algorithm not converging or converging to the wrong transformation. Since the maps we are using include 3 dimensions, we will need at least six different landmarks, but it is preferable to have more than that. It takes time for the local landmark map to be created as the vehicle must drive around and discover new landmarks to be added to it. Additionally, for the SICP algorithm to be effective, those local landmarks must have corresponding landmarks of the same time in the local map. This necessitates that the SICP algorithm be run at a low frequency compared to the SLAM algorithm. This rate is heavily determined by the use case. A dense city, for example, will likely have more landmarks per area than a smaller city or rural area. In the case of this project, the SICP algorithm was run every 15 seconds of simulated time.
 
 
 \subsection{Trajectory Correction}
@@ -125,15 +143,17 @@ Results placeholder
 
 \section{LIMITATIONS}
 
-\subsection{Variable density of source and target cloud}
 
+\subsection{Variability in Sign Data Between Data Sources}
+The local and global road-sign data comes from different sources with different suppliers. These suppliers each have their own methods and specifications of detecting and representing road-sign data. The result of this is significant variability in the data between those sources.
 
-For the Semantic ICP algorithm the traffic signs in HERE maps are used as the target cloud. The source cloud for the Point Cloud Registration came from the drive data of mobile platform. The drive data has a high density of 450 different traffic signs in the sample drive around Chicago downtown. But the corresponding HERE HD global map have a low density of sign data and with fewer sign types. Our algorithm could find matching correspondences between 12 and 15 semantic traffic sign types, even though the drive data has hundreds of different traffic sign types. The following are some of the traffic signs with matching correspondences between source and target cloud; Pedestrian crossing warning, STOP sign, YIELD, Road Narrows Right, and Slippery When Wet.
-\subsection{Mislabeled Semantics}
+The vehicle road-sign data consists of hundreds of different sign types while the global map data has a low density of sign data with much fewer sign types. The specification we had access to for the vehicle data road-sign types was not a complete list, as there were sign labels in the data that were not included in the documentation. In addition, sometimes, the vehicle road-sign data was incorrectly labeled, leading to incorrect correlation during the SICP algorithm. One particular sign that caused issues was the sign type 46, which is he label for a "No Turn on Red" sign. Many instances of these sign type had incorrect labels, which resulted in wrong correlation in the SICP algorithm and caused divergence from the correct solution. We fixed this by removing that sign type from our data. While this was an acceptable solution for the scope of this project, having correctly labeled signs is very important for future research.
 
-Sometimes, the sign types stored in the drive data are not binned perfectly. There are instances in which the traffic sign types are mislabeled or stored under different types. In our case, the sign type 46 (NO TURN ON RED sign) had many incorrect labels which resulted in wrong correspondences and caused divergence from the solution. We had to remove that specific sign type from the semantics to get the SICP to function correctly.
+Furthermore, there were only 15 matching road-sign labels from the vehicle data to the global map, even though the drive data has hundreds of different traffic sign types. The following are some of the traffic signs with matching correspondences between the vehicle data and global map: "Pedestrian Crossing", "STOP", "YIELD", "Road Narrows - Right", and "Slippery When Wet". Having access to more matching sign types would allow the SICP algorithm to better register the local landmark map to the global map.
 
+\subsection{SICP Initial Guess}
 
+A major limitation to the SICP algorithm is the algorithm's reliance on an accurate initial transform. If the GPS input data used for the initial transform is offset by too much, then the algorithm would find nearest neighbors in the wrong area, and converge to an incorrect transformation. This is especially true in a large city where the streets are likely to be arranged in a grid, with repeating patterns in the landmark map, such as stop signs at every intersection in an area. If the observed landmarks are arranged in a significantly similar pattern to the landmarks on adjacent streets, then even an offset of the size of one city block could cause a convergence to the wrong transformation. Additionally, minor changes in the angle of rotation between the local and global landmark maps can cause the algorithm to converge to the incorrect transform. This is also especially true when dealing with vehicle trajectories, as even a minor angle of rotation can cause drift that is hundreds or thousands of meters. The routine GPS input data helps to lessen the impact of this, as even noisy GPS data will give a good estimate of the direction traveled over the course of a drive through a city. 
 
 \section{FUTURE WORK}
 
@@ -212,35 +232,12 @@ References are important to the reader; therefore, each citation must be complet
 
 \begin{thebibliography}{99}
 
-\bibitem{c1} G. O. Young, 'Synthetic structure of industrial plastics (Book style with paper title and editor),' 	in Plastics, 2nd ed. vol. 3, J. Peters, Ed.  New York: McGraw-Hill, 1964, pp. 15'64.
-\bibitem{c2} W.-K. Chen, Linear Networks and Systems (Book style).	Belmont, CA: Wadsworth, 1993, pp. 123'135.
-\bibitem{c3} H. Poor, An Introduction to Signal Detection and Estimation.   New York: Springer-Verlag, 1985, ch. 4.
-\bibitem{c4} B. Smith, 'An approach to graphs of linear forms (Unpublished work style),' unpublished.
-\bibitem{c5} E. H. Miller, 'A note on reflector arrays (Periodical style'Accepted for publication),' IEEE Trans. Antennas Propagat., to be publised.
-\bibitem{c6} J. Wang, 'Fundamentals of erbium-doped fiber amplifiers arrays (Periodical style'Submitted for publication),' IEEE J. Quantum Electron., submitted for publication.
-\bibitem{c7} C. J. Kaufman, Rocky Mountain Research Lab., Boulder, CO, private communication, May 1995.
-\bibitem{c8} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, 'Electron spectroscopy studies on magneto-optical media and plastic substrate interfaces(Translation Journals style),' IEEE Transl. J. Magn.Jpn., vol. 2, Aug. 1987, pp. 740'741 [Dig. 9th Annu. Conf. Magnetics Japan, 1982, p. 301].
-\bibitem{c9} M. Young, The Techincal Writers Handbook.  Mill Valley, CA: University Science, 1989.
-\bibitem{c10} J. U. Duncombe, 'Infrared navigation'Part I: An assessment of feasibility (Periodical style),' IEEE Trans. Electron Devices, vol. ED-11, pp. 34'39, Jan. 1959.
-\bibitem{c11} S. Chen, B. Mulgrew, and P. M. Grant, 'A clustering technique for digital communications channel equalization using radial basis function networks,' IEEE Trans. Neural Networks, vol. 4, pp. 570'578, July 1993.
-\bibitem{c12} R. W. Lucky, 'Automatic equalization for digital communication,' Bell Syst. Tech. J., vol. 44, no. 4, pp. 547'588, Apr. 1965.
-\bibitem{c13} S. P. Bingulac, 'On the compatibility of adaptive controllers (Published Conference Proceedings style),' in Proc. 4th Annu. Allerton Conf. Circuits and Systems Theory, New York, 1994, pp. 8'16.
-\bibitem{c14} G. R. Faulhaber, 'Design of service systems with priority reservation,' in Conf. Rec. 1995 IEEE Int. Conf. Communications, pp. 3'8.
-\bibitem{c15} W. D. Doyle, 'Magnetization reversal in films with biaxial anisotropy,' in 1987 Proc. INTERMAG Conf., pp. 2.2-1'2.2-6.
-\bibitem{c16} G. W. Juette and L. E. Zeffanella, 'Radio noise currents n short sections on bundle conductors (Presented Conference Paper style),' presented at the IEEE Summer power Meeting, Dallas, TX, June 22'27, 1990, Paper 90 SM 690-0 PWRS.
-\bibitem{c17} J. G. Kreifeldt, 'An analysis of surface-detected EMG as an amplitude-modulated noise,' presented at the 1989 Int. Conf. Medicine and Biological Engineering, Chicago, IL.
-\bibitem{c18} J. Williams, 'Narrow-band analyzer (Thesis or Dissertation style),' Ph.D. dissertation, Dept. Elect. Eng., Harvard Univ., Cambridge, MA, 1993. 
-\bibitem{c19} N. Kawasaki, 'Parametric study of thermal and chemical nonequilibrium nozzle flow,' M.S. thesis, Dept. Electron. Eng., Osaka Univ., Osaka, Japan, 1993.
-\bibitem{c20} J. P. Wilkinson, 'Nonlinear resonant circuit devices (Patent style),' U.S. Patent 3 624 12, July 16, 1990. 
-
-
-
-
+\bibitem{cHERE} “Automotive Technologies.” HERE. Accessed May 1, 2020. https://www.here.com/products/automotive.
+\bibitem{cGICP} Parkison et al. Semantic Iterative Closest Point through Expectation-Maximization. http://robots.engin.umich.edu/publications/sparkison-2018a.pdf
+\bibitem{cgicpse3} Maani Ghaffari Jadidi (2020) sicp\_se3.m [algorithm] https://umich.instructure.com/courses/344063/files/folder/code/gicp
+\bibitem{cNN} “K-Nearest Neighbors Algorithm.” Wikipedia. Wikimedia Foundation, April 14, 2020. https://en.wikipedia.org/wiki/K-nearest\_neighbors\_algorithm.
 
 
 \end{thebibliography}
-
-
-
 
 \end{document}
