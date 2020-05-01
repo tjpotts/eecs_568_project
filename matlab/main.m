@@ -11,8 +11,8 @@ sim_options.t_start = 780;
 sim_options.t_end = 4200;
 %sim_options.t_end = 900;
 sim_options.optimization_period = 0.1; % Amount of simulated time in seconds to wait between each slam optimization
-sim_options.icp_period = 15; % Amount of simulated time in second to wait between each calculation of ICP
-sim_options.plot_period = 15; % Amount of real time in seconds to wait between each update of the trajectory and landmark plot
+sim_options.icp_period = 15; % Amount of simulated time in seconds to wait between each calculation of ICP
+sim_options.video_period = 1; % Amount of simulated time in seconds between output video frames (0 = disable video writer)
 
 % Load vehicle data
 load('VehicleData3.mat');
