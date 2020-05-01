@@ -25,6 +25,11 @@ function [output] = runSimulation(vehicle_input, global_map, ground_truth, optio
         open(video_writer);
     end
 
+    % Variables to hold error results
+    sicp_matches = [];
+    sicp_error = [];
+    sicp_transform = [];
+
     % Main loop
     t = options.t_start;
     t_last_optimization = t;
@@ -35,6 +40,7 @@ function [output] = runSimulation(vehicle_input, global_map, ground_truth, optio
     i_landmarks = find(vehicle_input.t_landmarks > options.t_start, 1);;
     done = 0;
     while(~done)
+        display(t);
 
         % Add new odometry measurements at the current time
         while (t >= vehicle_input.t_odometry(i_odometry))
@@ -87,14 +93,14 @@ function [output] = runSimulation(vehicle_input, global_map, ground_truth, optio
             sicp_obj.getCorrectedPose();
             sicp_obj.calculateError();
 
-            display(sicp_obj.correlation);
-            display(sicp_obj.converged);
-            display(sicp_obj.avgError);
-            display(sicp_obj.T);
-
             % Get the trajectory correction
             x_offset = sicp_obj.T(1,4);
             y_offset = sicp_obj.T(2,4);
+
+            % Store results
+            sicp_matches = [sicp_matches; size(sicp_obj.correlation,1)];
+            sicp_error = [sicp_error; sicp_obj.avgError];
+            sicp_transform = [sicp_transform; sicp_obj.T(1:2,4)'];
 
             % Update local map visualization
             local_map_scatter.XData = local_map(:,2);
@@ -140,5 +146,9 @@ function [output] = runSimulation(vehicle_input, global_map, ground_truth, optio
     output = {};
     output.trajectory = slam.getTrajectoryEstimate();
     output.local_map = slam.getMapEstimate();
+    output.sicp = {};
+    output.sicp.err = sicp_error;
+    output.sicp.matches = sicp_matches;
+    output.sicp.transform = sicp_transform;
 end
 
