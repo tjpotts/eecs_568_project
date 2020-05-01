@@ -52,7 +52,7 @@ Email: ajaeckel@umich.edu, ryajones@umich.edu, tpotts@umich.edu, rbaskara@umich.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-Abstract placeholder
+Many of today’s partially autonomous vehicles rely heavily on the ability to localize correctly to a known map.  These systems are not robust enough to work in all areas and so functionality is reduced in areas that present particular challenges or hazards.  Some systems may limit functionality due to noise factors such as low-quality lane line markings, while yet others may not operation areas such as construction zones. As autonomous vehicles expand their range to include metropolitan areas, they can experience decreased GPS accuracy.  This occurs when the vehicle is surrounded by tall buildings and can induce multipath effects in the GPS.  If the vehicle does localize correctly then it may offer a higher level of autonomous support than is safe.  Our solution to this challenge is to detect traffic signs and use them for localizing to a known map of traffic signs.  We use slam to construct a local traffic sign point cloud.  Then we use a Semantic Iterative Closest Point algorithm to correlate the local point cloud to a global point cloud.
 
 \end{abstract}
 
@@ -278,6 +278,11 @@ References are important to the reader; therefore, each citation must be complet
 \bibitem{cgicpse3} Maani Ghaffari Jadidi (2020) sicp\_se3.m [algorithm] https://umich.instructure.com/courses/344063/files/folder/code/gicp
 \bibitem{cNN} “K-Nearest Neighbors Algorithm.” Wikipedia. Wikimedia Foundation, April 14, 2020. https://en.wikipedia.org/wiki/K-nearest\_neighbors\_algorithm.
 \bibitem{ref:isam} M. Kaess, 'iSAM2: Incremental Smoothing and Mapping Using the Bayes Tree,' Intl. J. of Robotics Research, 31(2), 216-235.
+\bibitem{HereSigns} “Advanced Navigation Attributes” HERE. Here, Inc, April 14, 2020.  https://platform.here.com/data/hrn:here:data::olp-here:rib-2/advanced-navigation-attributes/schema.
+\bibitem{HereRoads} “Road Topology and Geometry" HERE. Here, Inc, April 14, 2020.  https://platform.here.com/data/hrn:here:data::olp-here:rib-2/topology-geometry/schema.
+\bibitem{HereSeg} “Road Representation” HERE. Here, Inc, April 14, 2020.  https://developer.here.com/olp/documentation/optimized-map-for-analytics/topics/data-model-comparison.html.
+
+ 
 
 
 \end{thebibliography}
