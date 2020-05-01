@@ -175,7 +175,7 @@ Figure \ref{fig:simresults} shows the results after finding 7 observed landmarks
 Figure \ref{fig:sicperr} shows the error between the local map and global map after performing SICP alignment.
 Figure \ref{fig:trajerr} shows the error between the corrected trajectory and the ground truth trajectory. This data shows that only a few points are necessary to recover the true trajectory. However, the dataset used had errors in some of the observed semantic classes which caused incorrect results from the SICP algorithm once those measurements were obtained.
 
-Figure \ref{fig:sicptrajerr} shows the correlation between the SICP and corrected trajectory errors. There is a high correlation between the SICP error, which is observable without knowing the ground truth, and the error in the corrected trajectory. This indicates that the SICP error can be used as a good metric for determining whether or not the trajecory correction was successful.
+Figure \ref{fig:sicptrajerr} shows the correlation between the SICP and corrected trajectory errors. There is a high correlation between the SICP error, which is observable without knowing the ground truth, and the error in the corrected trajectory. This indicates that the SICP error can be used as a good metric for determining whether or not the trajectory correction was successful.
 
 \section{LIMITATIONS}
 
@@ -208,7 +208,7 @@ The SICP algorithm used in this project was fairly simple, and could often conve
 \begin{itemize}
 \item Perform semantic GICP instead of ICP to consider the covariance of normal vectors to distributions of landmarks that are near each other. Road-signs will generally follow a specific distribution, with signs near or on the road, and facing the direction of travel on that road. This fact could be used when registering the local landmark map to the global landmark map to allow better correlation between landmarks. This idea of semantic GICP is discussed in Parison et al. \cite{cGICP}
 \item Instead of running the SICP algorithm once every iteration, it could be run multiple times with different initial guesses. For each resulting transformation, the average distance between the transformed local landmarks and the global landmarks could be computed, and the transformation with the lowest average distance away could be taken.
-\item Research other ICP algorithms that have been developed by researchers that already improve upon the ICP algorithm used here. For example, Szymon Rusinkiewicz and Marc Levoy of Stanford University[NEED CITATION HERE] have developed an ICP algorithm that uses a random, weighted, sampling of the point clouds and a different method for determining correlation instead of closes point as we used in this project.
+\item Research other ICP algorithms that have been developed by researchers that already improve upon the ICP algorithm used here. For example, Szymon Rusinkiewicz and Marc Levoy of Stanford University \cite{ref:futurework} have developed an ICP algorithm that uses a random, weighted, sampling of the point clouds and a different method for determining correlation instead of closes point as we used in this project.
 \item Use known geographical information to infer potential paths the vehicle could take. For example, if we know that the downtown of a city has only roads in a grid going north-south and east-west, then we know that the trajectory must be one of those directions. A probabilistic method of determining which path the vehicle could turn could be used to register points more accurately.
 \end{itemize}
 
@@ -233,6 +233,7 @@ The SICP algorithm used in this project was fairly simple, and could often conve
 \bibitem{cgicpse3} Maani Ghaffari Jadidi (2020) sicp\_se3.m [algorithm] https://umich.instructure.com/courses/344063/files/folder/code/gicp
 \bibitem{cNN} “K-Nearest Neighbors Algorithm.” Wikipedia. Wikimedia Foundation, April 14, 2020. https://en.wikipedia.org/wiki/K-nearest\_neighbors\_algorithm.
 \bibitem{ref:isam} M. Kaess, 'iSAM2: Incremental Smoothing and Mapping Using the Bayes Tree,' Intl. J. of Robotics Research, 31(2), 216-235.
+\bibitem{ref:futurework}'Efficient Variants of the ICP Algorithm', by Szymon Rusinkiewicz and Marc Levoy, Stanford University.
 
 
 \end{thebibliography}
